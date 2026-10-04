@@ -43,7 +43,13 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--panel2);border-radius:12px;padding:4px;margin-bottom:16px}
 .tabs button{height:40px;border-radius:9px;color:var(--mute);font-weight:600}
 .tabs button.on{background:var(--bg);color:var(--text)}
-.err{color:#ff8a80;font-size:13.5px;min-height:1.2em;margin:8px 2px 0}
+.err{color:#ff8a80;font-size:13.5px;min-height:1.2em;margin:8px 2px 0;line-height:1.5}
+.err button{color:var(--accent);text-decoration:underline;font-weight:700;margin-left:4px}
+.warn{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.4);font-size:13px;line-height:1.5;color:#ffd79a}
+.check{display:flex;align-items:center;gap:8px;margin:2px 0 14px;font-size:13.5px;color:var(--mute)}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.link.center{display:block;margin:10px auto 0}
+.link b{color:var(--accent)}
 .fine{color:var(--mute);font-size:12.5px;text-align:center;line-height:1.55}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .seg button{height:50px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600}
@@ -162,12 +168,48 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
 #bubble b{color:#a24f00}
 #bText{position:relative;z-index:1}
 #bTail{position:absolute;width:12px;height:12px;background:#fbf6ec;transform:rotate(45deg)}
-.b-row{position:relative;z-index:1;display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px}
+.b-row{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:12.5px}
 .b-row button{height:30px;padding:0 11px;border-radius:15px;background:#efe6d4;font-weight:700;color:#1d1a14}
 .b-row .b-pri{background:#1d1a14;color:#fbf6ec}
 #bStep{color:#7a705f;margin-right:auto}
 #spot{position:fixed;z-index:54;pointer-events:none;border:2px solid var(--accent);border-radius:14px;box-shadow:0 0 0 4px rgba(255,181,71,.22);animation:spot 1.4s ease-in-out infinite}
 @keyframes spot{50%{box-shadow:0 0 0 10px rgba(255,181,71,0)}}
+.rs-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.rs-code{display:flex;flex-direction:column;align-items:flex-end;padding:6px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.rs-code small{font-size:11px;color:var(--mute)}
+.rs-code b{font-size:20px;letter-spacing:.14em;color:var(--accent)}
+.meter{height:8px;border-radius:4px;background:var(--panel2);overflow:hidden;margin:14px 0 10px}
+.meter i{display:block;height:100%;width:0;background:var(--accent);border-radius:4px;transition:width .4s}
+.meter.full i{background:var(--subj)}
+.rs-status{margin:0 0 12px;font-weight:800;font-size:15px}
+.rs-status.full{color:#7ee79a}
+.slots{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+.slot{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);animation:fade .25s}
+.slot.empty{background:none;border-style:dashed;opacity:.65}
+.slot .av{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:#262c36;color:var(--mute)}
+.slot:not(.empty) .av{background:rgba(255,181,71,.16);color:var(--accent)}
+.slot .who{flex:1;min-width:0}
+.slot .who b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .who small{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:12.5px;margin-top:3px}
+.dot{width:8px;height:8px;border-radius:50%;background:#5b6470;flex:0 0 auto}
+.dot.ok{background:var(--subj)}
+.dot.wait{background:var(--accent);animation:led 1.2s ease-in-out infinite}
+.tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.tags em{font-style:normal;font-size:11px;font-weight:800;padding:3px 7px;border-radius:6px;background:#262c36;color:var(--mute)}
+.tags em.dir{background:rgba(255,181,71,.16);color:var(--accent)}
+.tags em.me{background:rgba(90,209,200,.16);color:var(--teal)}
+.row2{display:flex;gap:8px}
+.row2 .btn{flex:1}
+.slot{flex-wrap:wrap}
+.uid{font-weight:500;font-size:12px;color:var(--mute);margin-left:6px}
+.tags em.air{background:rgba(255,69,58,.18);color:#ff8a80}
+.tags em.subj{background:rgba(50,215,75,.16);color:#7ee79a}
+.roles{flex-basis:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:2px}
+.roles button{height:36px;border-radius:10px;background:#262c36;border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--mute)}
+.roles button.on{color:#fff;border-color:transparent;background:#3a4250}
+.roles button.on[data-r=air]{background:var(--onair)}
+.roles button.on[data-r=subj]{background:var(--subj);color:#03250b}
+#bText small{color:#7a705f}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:900px){.tile{width:88px;height:112px}}
 </style>
@@ -182,7 +224,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
     <header class="brand">
       <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd27e"/><stop offset="1" stop-color="#ff9a3c"/></linearGradient><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fe3da"/><stop offset="1" stop-color="#2f8fa0"/></linearGradient></defs><circle cx="24" cy="32" r="17" fill="url(#lg1)"/><circle cx="40" cy="32" r="17" fill="url(#lg2)" opacity=".82"/><circle cx="32" cy="32" r="6" fill="#0b0d10"/></svg>
       <h1>FusionCam</h1>
-      <p>여러 대의 휴대폰을 <b>하나의 카메라</b>로.<br>풍경은 그 사람의 폰에서, 인물은 내 폰에서.</p>
+      <p data-soft>여러 대의 휴대폰을 <b>하나의 카메라</b>로.<br>풍경은 그 사람의 폰에서, 인물은 내 폰에서.</p>
     </header>
     <div class="card">
       <div class="tabs" role="tablist" data-critical>
@@ -190,20 +232,32 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
         <button type="button" role="tab" data-tab="signup">회원가입</button>
       </div>
       <form id="fLogin" autocomplete="on">
-        <label class="field"><span>아이디 (이메일)</span><input class="in" name="id" type="email" autocomplete="username" required data-critical></label>
+        <label class="field"><span>아이디</span><input class="in" name="id" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="email" required data-critical></label>
         <label class="field"><span>비밀번호</span><input class="in" name="pw" type="password" autocomplete="current-password" required data-critical></label>
+        <label class="check" data-critical><input type="checkbox" id="keepLogin" checked> 로그인 상태 유지 (다음에 열면 바로 시작)</label>
         <button class="btn primary" data-critical>로그인</button>
+        <button type="button" class="link center" id="btnForgot">비밀번호를 잊으셨나요? <b>재설정</b></button>
+      </form>
+      <form id="fReset" hidden>
+        <p class="sub" data-critical>이 휴대폰에 가입한 <b>아이디</b>와 가입할 때 쓴 <b>이름</b>이 맞으면 새 비밀번호로 바꿀 수 있어요.</p>
+        <label class="field"><span>아이디</span><input class="in" name="id" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="email" required data-critical></label>
+        <label class="field"><span>가입할 때 쓴 이름</span><input class="in" name="name" maxlength="12" required data-critical></label>
+        <label class="field"><span>새 비밀번호 (6자 이상)</span><input class="in" name="pw" type="password" minlength="6" autocomplete="new-password" required data-critical></label>
+        <label class="field"><span>새 비밀번호 확인</span><input class="in" name="pw2" type="password" minlength="6" autocomplete="new-password" required data-critical></label>
+        <button class="btn primary" data-critical>비밀번호 재설정</button>
+        <button type="button" class="link center" id="btnBackLogin">로그인으로 돌아가기</button>
       </form>
       <form id="fSignup" hidden>
         <label class="field"><span>이름 (촬영장에서 보일 닉네임)</span><input class="in" name="name" maxlength="12" required data-critical></label>
-        <label class="field"><span>아이디 (이메일)</span><input class="in" name="id" type="email" autocomplete="username" required data-critical></label>
+        <label class="field"><span>아이디 (영문·숫자·이메일)</span><input class="in" name="id" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="email" required data-critical></label>
         <label class="field"><span>비밀번호 (6자 이상)</span><input class="in" name="pw" type="password" minlength="6" autocomplete="new-password" required data-critical></label>
         <label class="field"><span>비밀번호 확인</span><input class="in" name="pw2" type="password" minlength="6" autocomplete="new-password" required data-critical></label>
         <button class="btn primary" data-critical>가입하고 시작하기</button>
       </form>
       <p class="err" id="authErr" role="alert"></p>
+      <p class="warn" id="authWarn" hidden>이 브라우저 창은 데이터를 저장할 수 없어요(사생활 보호 모드·메신저 앱 안 미리보기 등). 가입해도 다시 열면 사라지니, <b>크롬이나 사파리</b>에서 HTTPS 주소로 열어 주세요.</p>
     </div>
-    <p class="fine">계정은 이 기기의 브라우저에만 저장되고, 비밀번호는 PBKDF2로 해시됩니다.<br>카메라 사용을 위해 HTTPS 주소에서 열어 주세요.</p>
+    <p class="fine">계정은 <b>이 휴대폰의 브라우저</b>에 저장돼요. 다른 폰에서는 그 폰에서 따로 가입해 주세요.<br>비밀번호는 PBKDF2로 해시되고, 카메라는 HTTPS 주소에서만 켜집니다.</p>
   </div>
 </section>
 
@@ -243,7 +297,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
 <section class="screen" data-screen="studio" hidden>
   <header class="topbar" data-critical>
     <button class="chip code" id="chipCode" title="초대 링크 공유"></button>
-    <span class="chip" id="chipCount"></span>
+    <button class="chip" id="chipCount" aria-label="참여 현황 보기"></button>
     <span class="chip" id="chipRole"></span>
     <span class="spacer"></span>
     <button class="iconbtn" id="btnMenu" aria-label="메뉴" aria-haspopup="true"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button>
@@ -322,6 +376,25 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
   </div>
 </div>
 
+<!-- 참여 현황 (방장이 만든 직후 자동으로 열림, 👥 칩으로 언제든) -->
+<div class="sheetwrap" id="rosterSheet" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-labelledby="rsTitle" data-critical>
+    <div class="grab"></div>
+    <div class="rs-head">
+      <div><h3 id="rsTitle">참여 현황</h3><p class="sub" id="rsSub"></p></div>
+      <button class="rs-code" id="rsCode" aria-label="초대 링크 공유"><small>그룹 코드</small><b id="rsCodeTxt"></b></button>
+    </div>
+    <div class="meter" id="rsMeter" role="progressbar" aria-valuemin="0"><i id="rsBar"></i></div>
+    <p class="rs-status" id="rsStatus" aria-live="polite"></p>
+    <ol class="slots" id="rsList"></ol>
+    <div class="row2">
+      <button class="btn" id="rsShare">초대 링크 보내기</button>
+      <button class="btn primary" id="rsStart">촬영 시작</button>
+    </div>
+  </div>
+</div>
+
 <!-- 작품 갤러리 -->
 <div class="sheetwrap" id="galSheet" hidden>
   <div class="backdrop" data-close></div>
@@ -375,7 +448,8 @@ const clamp = (v, a = -1, b = 1) => Math.max(a, Math.min(b, v));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v) } catch { return d } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true } catch { return false } },
+  del(k) { try { localStorage.removeItem(k) } catch {} },
 };
 function throttle(fn, ms) {
   let last = 0, timer = 0, args;
@@ -397,7 +471,7 @@ function toast(msg, ms = 2600) {
 const S = {
   user: null, facing: store.get('fc.facing', 'user'), cap: 4, screen: '',
   peer: null, me: null, isHost: false, hostId: null, hostConn: null, conns: new Map(), code: '',
-  roster: [], st: null, wasDir: null,
+  roster: [], st: null, wasDir: null, knownIds: new Set(), lastN: 0,
   local: null, call: null, callLive: false, remote: new Map(), vids: new Map(),
   tele: new Map(), myTele: null, myTeleAt: 0, base: null,
   pgm: null, pctx: null, pgmStream: null, raf: 0,
@@ -408,51 +482,105 @@ const member = id => S.roster.find(m => m.id === id);
 const defaultState = dir => ({ directorId: dir, mode: 'cut', onAir: dir, subject: null, bench: [], aspect: '9:16', fx: { dist: .4, x: .5, y: 1, zoom: 1, par: .6, blur: .25 } });
 
 // ═════════ 회원가입 · 로그인 (기기 로컬) ═════════
+// 계정은 이 브라우저(localStorage)에 저장된다. '로그인 상태 유지'면 세션도 localStorage, 아니면 이번 창(sessionStorage)에만.
 const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const normId = v => v.trim().toLowerCase();
+const storageOK = (() => { try { localStorage.setItem('fc.t', '1'); localStorage.removeItem('fc.t'); return true } catch { return false } })();
+const authErr = (code, msg) => Object.assign(new Error(msg), { code });
 async function pbkdf2(pw, salt) {
   if (!crypto.subtle) throw new Error('보안 연결(HTTPS)에서만 로그인할 수 있어요.');
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
   return b64(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, key, 256));
 }
+async function setPassword(users, id, pw) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  users[id] = { ...users[id], salt: b64(salt), hash: await pbkdf2(pw, salt) };
+  if (!store.set('fc.users', users)) throw new Error('이 브라우저에서는 계정을 저장할 수 없어요. 크롬이나 사파리에서 열어 주세요.');
+}
 async function signup(id, name, pw) {
   const users = store.get('fc.users', {});
-  if (users[id]) throw new Error('이미 가입된 아이디예요. 로그인해 주세요.');
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  users[id] = { name, salt: b64(salt), hash: await pbkdf2(pw, salt), created: Date.now() };
-  store.set('fc.users', users);
+  if (users[id]) throw authErr('exists', '이미 가입된 아이디예요. 비밀번호를 넣고 로그인하세요.');
+  users[id] = { name, created: Date.now() };
+  await setPassword(users, id, pw);
 }
-async function login(id, pw) {
+async function resetPassword(id, name, pw) {   // 기기 로컬 계정이라 이메일 대신 '가입 이름'으로 본인 확인
+  const users = store.get('fc.users', {});
+  if (!users[id]) throw authErr('nouser', `이 휴대폰에는 ‘${id}’ 계정이 없어요.`);
+  if (users[id].name !== name) throw new Error('가입할 때 쓴 이름과 달라요.');
+  await setPassword(users, id, pw);
+}
+async function login(id, pw, keep) {
   const u = store.get('fc.users', {})[id];
-  if (!u || await pbkdf2(pw, unb64(u.salt)) !== u.hash) throw new Error('아이디 또는 비밀번호가 맞지 않아요.');
+  if (!u) throw authErr('nouser', `이 휴대폰에는 ‘${id}’ 계정이 없어요. 계정은 폰(브라우저)마다 따로 저장돼요.`);
+  if (await pbkdf2(pw, unb64(u.salt)) !== u.hash) throw authErr('badpw', '비밀번호가 맞지 않아요.');
   S.user = { id, name: u.name };
-  store.set('fc.session', S.user);
+  store.del('fc.session');
+  try { sessionStorage.removeItem('fc.session') } catch {}
+  if (keep) store.set('fc.session', S.user);
+  else try { sessionStorage.setItem('fc.session', JSON.stringify(S.user)) } catch {}
+  store.set('fc.lastId', id);
+  navigator.storage?.persist?.().catch(() => {});   // 저장 공간이 자동 정리되지 않게 요청
+  // 브라우저 비밀번호 관리자에 저장 → 다음에 자동 입력 (크롬 등)
+  if (window.PasswordCredential) navigator.credentials.store(new PasswordCredential({ id, password: pw, name: u.name })).catch(() => {});
+}
+function logout() {
+  S.user = null;
+  store.del('fc.session');
+  try { sessionStorage.removeItem('fc.session') } catch {}
+  show('auth');
 }
 
-$$('.tabs button').forEach(b => b.onclick = () => {
-  $$('.tabs button').forEach(x => x.classList.toggle('on', x === b));
-  $('#fLogin').hidden = b.dataset.tab !== 'login';
-  $('#fSignup').hidden = b.dataset.tab !== 'signup';
-  $('#authErr').textContent = '';
+const AUTH_FORMS = { login: '#fLogin', signup: '#fSignup', reset: '#fReset' };
+function authView(view, { id, msg = '' } = {}) {
+  $$('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === (view === 'signup' ? 'signup' : 'login')));
+  for (const [v, sel] of Object.entries(AUTH_FORMS)) $(sel).hidden = v !== view;
+  const idIn = $(AUTH_FORMS[view]).elements.id;
+  if (id) idIn.value = id;
+  else if (!idIn.value) idIn.value = store.get('fc.lastId', '');   // 마지막 아이디 기억
+  $('#authErr').innerHTML = msg;
   Bot.place();
-});
+}
+function authFail(err, id) {
+  const e = $('#authErr');
+  if (err.code === 'exists') return authView('login', { id, msg: esc(err.message) });
+  e.textContent = err.message;
+  const go = (label, view) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = () => authView(view, { id }); e.append(' ', b) };
+  if (err.code === 'nouser') go('이 아이디로 가입하기', 'signup');
+  if (err.code === 'badpw') go('비밀번호 재설정', 'reset');
+}
+$$('.tabs button').forEach(b => b.onclick = () => authView(b.dataset.tab));
+$('#btnForgot').onclick = () => authView('reset', { id: normId($('#fLogin').elements.id.value) });
+$('#btnBackLogin').onclick = () => authView('login');
 $('#fLogin').onsubmit = async e => {
   e.preventDefault();
-  const f = e.target;
-  try { await login(f.id.value.trim().toLowerCase(), f.pw.value); f.reset(); show('lobby') }
-  catch (err) { $('#authErr').textContent = err.message }
+  const f = e.target.elements, id = normId(f.id.value);
+  try { await login(id, f.pw.value, $('#keepLogin').checked); e.target.reset(); show('lobby') }
+  catch (err) { authFail(err, id) }
 };
 $('#fSignup').onsubmit = async e => {
   e.preventDefault();
-  const f = e.target, id = f.id.value.trim().toLowerCase(), name = f.name.value.trim();
+  const f = e.target.elements, id = normId(f.id.value), name = f.name.value.trim();
   try {
     if (!name) throw new Error('이름을 입력해 주세요.');
+    if (id.length < 3) throw new Error('아이디는 3자 이상이에요.');
     if (f.pw.value.length < 6) throw new Error('비밀번호는 6자 이상이에요.');
     if (f.pw.value !== f.pw2.value) throw new Error('비밀번호 확인이 일치하지 않아요.');
     await signup(id, name, f.pw.value);
-    await login(id, f.pw.value);
-    f.reset(); show('lobby'); toast(`${name}님, 환영해요!`);
-  } catch (err) { $('#authErr').textContent = err.message }
+    await login(id, f.pw.value, true);
+    e.target.reset(); show('lobby'); toast(`${name}님, 환영해요! 이 폰에 계정을 저장했어요`);
+  } catch (err) { authFail(err, id) }
+};
+$('#fReset').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target.elements, id = normId(f.id.value);
+  try {
+    if (f.pw.value.length < 6) throw new Error('비밀번호는 6자 이상이에요.');
+    if (f.pw.value !== f.pw2.value) throw new Error('비밀번호 확인이 일치하지 않아요.');
+    await resetPassword(id, f.name.value.trim(), f.pw.value);
+    await login(id, f.pw.value, $('#keepLogin').checked);
+    e.target.reset(); show('lobby'); toast('비밀번호를 바꾸고 로그인했어요');
+  } catch (err) { authFail(err, id) }
 };
 
 // ═════════ 화면 전환 ═════════
@@ -460,6 +588,7 @@ function show(name) {
   for (const s of $$('.screen')) s.hidden = s.dataset.screen !== name;
   S.screen = name;
   if (name === 'lobby') renderLobby();
+  if (name === 'auth') authView('login');   // 로그아웃 뒤에도 항상 로그인 탭부터
   Bot.context(name === 'studio' ? (amDir() ? 'director' : 'staff') : name);
 }
 
@@ -478,7 +607,7 @@ for (let n = 2; n <= 10; n++) {
 }
 $$('#facingSeg button').forEach(b => b.onclick = () => { S.facing = b.dataset.f; store.set('fc.facing', S.facing); renderLobby() });
 $('#joinCode').oninput = e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-$('#btnLogout').onclick = () => { S.user = null; localStorage.removeItem('fc.session'); show('auth') };
+$('#btnLogout').onclick = logout;
 $('#btnHelp').onclick = () => Bot.tour();
 $('#btnLobbyGal').onclick = openGallery;
 $('#btnCreate').onclick = () => startGroup(true);
@@ -597,7 +726,7 @@ async function startGroup(host) {
       }
       if (!S.peer) throw new Error('그룹 코드를 만들지 못했어요. 다시 시도해 주세요.');
       S.isHost = true; S.me = S.hostId = S.peer.id;
-      S.roster = [{ id: S.me, name: S.user.name, cam: 1, facing: S.facing, zoom: zoomCaps() }];
+      S.roster = [{ id: S.me, name: S.user.name, uid: S.user.id, cam: 1, facing: S.facing, zoom: zoomCaps() }];
       S.st = defaultState(S.me);
       wirePeer();
     } else {
@@ -607,6 +736,7 @@ async function startGroup(host) {
       await joinHost();
     }
     enterStudio();
+    if (host) { openRoster(); Bot.say('스태프가 코드를 넣고 들어오면 여기에 바로 나타나요. 모두 모이면 알려 드릴게요!', 5000) }
   } catch (e) {
     console.warn(e);
     err.textContent = e.name === 'NotAllowedError' ? '카메라 권한이 필요해요. 브라우저 설정에서 허용해 주세요.'
@@ -620,7 +750,7 @@ function joinHost() {
     const t = setTimeout(() => rej(new Error('그룹을 찾을 수 없어요. 코드를 확인해 주세요.')), 20000);   // 모바일망 TURN 중계 여유
     S.pendingJoin = { res: () => { clearTimeout(t); S.pendingJoin = null; res() }, rej: e => { clearTimeout(t); S.pendingJoin = null; rej(e) } };
     const c = S.hostConn = S.peer.connect(S.hostId, { reliable: true, serialization: 'json' });
-    c.on('open', () => c.send({ t: 'hello', name: S.user.name, facing: S.facing, zoom: zoomCaps() }));
+    c.on('open', () => c.send({ t: 'hello', name: S.user.name, uid: S.user.id, facing: S.facing, zoom: zoomCaps() }));
     c.on('data', onMsg);
     const lost = () => { if (S.pendingJoin) S.pendingJoin.rej(new Error('그룹 연결이 끊어졌어요.')); else if (S.peer && S.hostConn === c) leave('그룹이 해체되었거나 연결이 끊어졌어요.') };
     c.on('close', lost); c.on('error', lost);
@@ -666,10 +796,10 @@ function hostAdmit(conn, d) {
   const used = new Set(S.roster.map(m => m.cam));
   let cam = 1; while (used.has(cam)) cam++;
   const name = String(d.name || '스태프').slice(0, 12);
-  S.roster.push({ id: conn.peer, name, cam, facing: d.facing === 'environment' ? 'environment' : 'user', zoom: d.zoom || null });
+  S.roster.push({ id: conn.peer, name, uid: String(d.uid || '').slice(0, 40), cam, facing: d.facing === 'environment' ? 'environment' : 'user', zoom: d.zoom || null });
   conn.send({ t: 'welcome', cap: S.cap, roster: S.roster, st: S.st });
-  broadcastRoster();
   toast(`CAM${cam} · ${name}님이 참여했어요`);
+  broadcastRoster();   // 마지막 자리가 차면 여기서 '모두 들어왔어요'가 위 알림을 덮어쓴다
 }
 function hostDrop(id) {
   if (!S.conns.delete(id)) return;
@@ -754,6 +884,25 @@ function onRoster() {
   for (const id of [...S.tele.keys()]) if (!member(id)) S.tele.delete(id);
   reconcileMedia();
   renderAll();
+  const n = S.roster.length, full = S.screen === 'studio' && n >= S.cap && S.lastN < S.cap;   // 마지막 한 명이 들어온 순간
+  const joined = S.roster.filter(m => !S.knownIds.has(m.id) && m.id !== S.me);
+  if (full) { toast(`✅ 모두 들어왔어요! (${n}/${S.cap})`, 3500); navigator.vibrate?.(120) }
+  if (S.screen === 'studio' && amDir()) {
+    if (joined.length) announceJoin(joined[joined.length - 1], full);
+    else if (full) Bot.say('모두 모였어요! <b>촬영 시작</b>을 누르고 <b>융합</b>으로 장면을 만들어 보세요.', 5000, true);
+  }
+  S.lastN = n;
+  S.knownIds = new Set(S.roster.map(m => m.id));
+}
+// 누가 들어왔는지 알리고 바로 역할을 정하게 한다 (후면 카메라면 배경, 전면이면 주인공을 추천)
+function announceJoin(m, full) {
+  navigator.vibrate?.([60, 40, 60]);
+  const rear = m.facing === 'environment';
+  Bot.ask(`${full ? '✅ 모두 모였어요! ' : ''}<b>CAM${m.cam} · ${esc(m.name)}</b>${m.uid ? ` <small>(${esc(m.uid)})</small>` : ''}님이 들어왔어요. 어떤 역할로 넣을까요?`, [
+    { label: '배경 카메라', primary: rear, fn: () => setRole(m.id, 'air') },
+    { label: '주인공', primary: !rear, fn: () => setRole(m.id, 'subj') },
+    { label: '스태프로 두기' },
+  ]);
 }
 
 // ═════════ 미디어 경로: 스태프 카메라 → 감독, 감독의 PGM → 스태프 ═════════
@@ -819,6 +968,8 @@ function enterStudio() {
     if (t && 'contentHint' in t) t.contentHint = 'motion';
   }
   S.wasDir = null;
+  S.lastN = S.roster.length;
+  S.knownIds = new Set(S.roster.map(m => m.id));
   show('studio');
   applyState();
   wake();
@@ -1096,6 +1247,7 @@ function renderAll() {
   renderTop();
   if (amDir()) { renderTiles(); renderCtl(); if (S.sheetId) renderCamSheet() }
   else renderStaff();
+  if (!$('#rosterSheet').hidden) renderRoster();
   Bot.placeSoon();   // 배지·타일 크기가 바뀌면 로봇·말풍선·강조 링도 다시 자리 잡기 (프레임당 1회)
 }
 function renderTop() {
@@ -1166,6 +1318,80 @@ function renderStaff() {
   if (z) { Object.assign(zi, { min: z.min, max: z.max, step: z.step }); syncRange('#zoomIn', z.cur); $('#zoomOut').textContent = (+z.cur).toFixed(1) + '×' }
 }
 
+// ═════════ 참여 현황 대시보드 ═════════
+const ROLE_LABEL = () => ({ air: S.st.mode === 'fusion' ? '배경' : 'ON AIR', subj: '주인공', staff: '스태프', bench: '대기' });
+function roleOf(id) {
+  const st = S.st;
+  return st.bench.includes(id) ? 'bench' : st.mode === 'fusion' && st.subject === id ? 'subj' : st.onAir === id ? 'air' : 'staff';
+}
+function setRole(id, role) {
+  if (!member(id) || !amDir() || roleOf(id) === role) return;
+  const st = S.st, bench = st.bench.filter(x => x !== id);
+  const off = { ...(st.onAir === id && { onAir: null }), ...(st.subject === id && { subject: null, mode: 'cut' }) };
+  if (role === 'bench') return setState({ bench: [...bench, id], ...off });
+  if (role === 'staff') return setState({ bench, ...off });
+  if (bench.length !== st.bench.length) setState({ bench });   // 대기였다면 먼저 선정
+  if (role === 'air') setAir(id); else setSubject(id);
+}
+function openRoster() { renderRoster(); $('#rosterSheet').hidden = false; Bot.place() }
+function slotStatus(m) {   // [점 색, 상태 문구]
+  const bench = S.st.bench.includes(m.id);
+  if (m.id === S.me) return amDir() ? ['ok', '이 폰 · 감독 화면'] : bench ? ['', '이 폰 · 대기(미선정)'] : S.callLive ? ['ok', '이 폰 · 감독에게 송출 중'] : ['wait', '이 폰 · 감독에게 연결 중…'];
+  if (m.id === S.st.directorId) return ['ok', '감독 · 연결됨'];
+  if (!amDir()) return ['ok', '참여 중'];
+  return bench ? ['', '대기(미선정)'] : S.remote.has(m.id) ? ['ok', '영상 연결됨'] : ['wait', '영상 연결 중…'];
+}
+function renderRoster() {
+  const n = S.roster.length, cap = S.cap, full = n >= cap;
+  $('#rsCodeTxt').textContent = S.code;
+  $('#rsSub').textContent = `${cap}대 촬영 그룹 · 방장 ${member(S.hostId)?.name ?? '-'}`;
+  $('#rsBar').style.width = Math.min(100, n / cap * 100) + '%';
+  $('#rsMeter').classList.toggle('full', full);
+  $('#rsMeter').setAttribute('aria-valuemax', cap); $('#rsMeter').setAttribute('aria-valuenow', n);
+  const status = $('#rsStatus');
+  status.classList.toggle('full', full);
+  status.textContent = full ? `✅ 모두 들어왔어요! (${n}/${cap})` : `${n}/${cap} 참여 · ${cap - n}명 더 기다리는 중…`;
+  const list = $('#rsList');
+  list.innerHTML = '';
+  const used = new Set(S.roster.map(m => m.cam));
+  for (const m of [...S.roster].sort((a, b) => a.cam - b.cam)) {
+    const [dot, txt] = slotStatus(m), facing = (m.id === S.me ? S.facing : m.facing) === 'user' ? '전면' : '후면';
+    const role = roleOf(m.id), dir = amDir();
+    const tags = [m.id === S.st.directorId && '<em class="dir">감독</em>', m.id === S.hostId && '<em>방장</em>', m.id === S.me && '<em class="me">나</em>',
+      !dir && role !== 'staff' && `<em class="${role}">${ROLE_LABEL()[role]}</em>`].filter(Boolean).join('');
+    const li = document.createElement('li');
+    li.className = 'slot';
+    li.innerHTML = `<span class="av">CAM${m.cam}</span><div class="who"><b>${esc(m.name)}${m.uid ? `<span class="uid">${esc(m.uid)}</span>` : ''}</b><small><i class="dot ${dot}"></i>${facing} 카메라 · ${txt}</small></div><span class="tags">${tags}</span>`;
+    if (dir) {   // 감독은 여기서 바로 역할(세팅)을 정한다
+      const roles = document.createElement('div');
+      roles.className = 'roles';
+      for (const [r, label] of Object.entries(ROLE_LABEL())) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.dataset.r = r; b.textContent = label;
+        b.classList.toggle('on', role === r); b.setAttribute('aria-pressed', role === r);
+        b.onclick = () => setRole(m.id, r);
+        roles.append(b);
+      }
+      li.append(roles);
+    }
+    list.append(li);
+  }
+  for (let c = 1, left = cap - n; left > 0; c++) {
+    if (used.has(c)) continue;
+    left--;
+    const li = document.createElement('li');
+    li.className = 'slot empty';
+    li.innerHTML = `<span class="av">CAM${c}</span><div class="who"><b>빈 자리</b><small><i class="dot"></i>코드 ${esc(S.code)}로 들어오면 여기에 바로 표시돼요</small></div>`;
+    list.append(li);
+  }
+  $('#rsShare').hidden = full;
+  $('#rsStart').textContent = !amDir() ? '닫기' : full ? '촬영 시작' : '기다리지 않고 시작';
+}
+$('#chipCount').onclick = openRoster;
+$('#rsCode').onclick = shareInvite;
+$('#rsShare').onclick = shareInvite;
+$('#rsStart').onclick = () => { $('#rosterSheet').hidden = true; Bot.place() };
+
 // ═════════ 감독 조작 ═════════
 // 자동 배정: 주인공은 감독 자신의 전면 카메라를 우선, 배경은 후면 카메라를 우선
 function pickCam(except, facing) {
@@ -1229,7 +1455,7 @@ $('#btnGallery').onclick = openGallery;
 
 // 카메라 지휘 시트
 function openCamSheet(id) { S.sheetId = id; renderCamSheet(); $('#camSheet').hidden = false }
-function closeSheets() { S.sheetId = null; $('#camSheet').hidden = true; $('#galSheet').hidden = true }
+function closeSheets() { S.sheetId = null; $('#camSheet').hidden = true; $('#galSheet').hidden = true; $('#rosterSheet').hidden = true }
 $$('[data-close]').forEach(b => b.onclick = closeSheets);
 function renderCamSheet() {
   const id = S.sheetId, m = member(id), st = S.st;
@@ -1364,7 +1590,7 @@ function renderGallery() {
 // ═════════ 설명 로봇 ‘찰칵이’ ═════════
 // 조작 영역([data-critical])을 피해 화면 가장자리에 머물고, 말풍선은 로봇·대상·조작부를 가리지 않는 쪽으로 자리를 고른다.
 const TOURS = {
-  auth: [{ t: '안녕하세요! 촬영 도우미 <b>찰칵이</b>예요.<br>처음이면 <b>회원가입</b>, 이미 계정이 있으면 로그인해 주세요.', at: '.tabs' }],
+  auth: [{ t: '안녕하세요! 촬영 도우미 <b>찰칵이</b>예요.<br>처음이면 <b>회원가입</b>, 계정이 있으면 로그인하세요. 계정은 <b>폰마다 따로</b> 저장돼요. 비밀번호를 잊으면 <b>재설정</b>!', at: '.tabs' }],
   lobby: [
     { t: '먼저 <b>내 카메라 방향</b>을 골라요. 풍경 담당은 <b>후면</b>, 셀카 주인공은 <b>전면</b>이 좋아요.', at: '#facingSeg' },
     { t: '감독(주인공) 폰에서 <b>카메라 수(2~10대)</b>를 고르고 그룹을 만들어요. 만든 사람이 첫 감독이에요.', at: '#createCard' },
@@ -1372,6 +1598,7 @@ const TOURS = {
   ],
   director: [
     { t: () => S.roster.length < 2 ? `아직 혼자예요. 위의 <b>코드 ${S.code}</b>를 누르면 초대 링크를 보낼 수 있어요.` : `스태프 ${S.roster.length - 1}명과 함께예요. 위 코드를 눌러 더 초대할 수 있어요.`, at: '#chipCode' },
+    { t: '<b>👥 참여 현황</b>에서 누가(로그인 아이디) 들어왔는지 보고, <b>배경·주인공·스태프·대기</b> 역할을 바로 정할 수 있어요. 새로 들어오면 제가 바로 알려 드려요.', at: '#chipCount' },
     { t: '가운데는 최종 송출 화면 <b>PGM</b>이에요. 셀카도 거울상이 아닌 <b>본상</b>(남이 찍어준 방향)으로, 보이는 그대로 저장돼요.', at: '#pgmWrap' },
     { t: '아래 <b>카메라 타일</b>을 누르면 ON AIR 전환, 주인공 지정, 스태프 선정, 원격 줌, <b>감독 권한 넘기기</b>를 할 수 있어요.', at: '#tiles' },
     { t: '<b>융합</b>을 누르면 배경 카메라의 풍경·화각을 이 폰으로 가져오고, 주인공 카메라에서 <b>인물만 오려</b> 합성해요.', at: '#btnFusion' },
@@ -1484,10 +1711,12 @@ const Bot = (() => {
     if (key === ctx) return;
     ctx = key; hide(); place();
     const seen = store.get('fc.seen', {});
-    if (TOURS[key] && !seen[key]) setTimeout(() => {
-      if (ctx !== key || !bub.hidden || quiet) return;
+    const tryTour = () => {
+      if (ctx !== key || quiet) return;
+      if (!bub.hidden || $('.sheetwrap:not([hidden])')) return void setTimeout(tryTour, 1000);   // 말풍선·시트가 닫힌 뒤에
       seen[key] = 1; store.set('fc.seen', seen); tour(key);
-    }, 900);
+    };
+    if (TOURS[key] && !seen[key]) setTimeout(tryTour, 900);
   }
   function once(key) {
     const seen = store.get('fc.seen', {});
@@ -1535,7 +1764,8 @@ const Bot = (() => {
 // ═════════ 시작 ═════════
 const joinParam = (location.hash.match(/join=([A-Za-z0-9]{6})/) || [])[1];
 if (joinParam) $('#joinCode').value = joinParam.toUpperCase();
-const sess = store.get('fc.session', null);
+const sess = store.get('fc.session', null) || (() => { try { return JSON.parse(sessionStorage.getItem('fc.session')) } catch { return null } })();
+$('#authWarn').hidden = storageOK;
 S.user = sess && store.get('fc.users', {})[sess.id] ? sess : null;
 show(S.user ? 'lobby' : 'auth');
 if (joinParam && S.user) setTimeout(() => Bot.say(`초대 코드 <b>${esc(joinParam.toUpperCase())}</b>가 입력됐어요. 카메라 방향을 고르고 <b>참여하기</b>를 누르세요.`, 6000), 1200);
