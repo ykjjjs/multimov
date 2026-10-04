@@ -313,12 +313,14 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
       </div>
     </div>
     <div class="adjust" id="adjust" hidden data-critical>
-      <div class="ctl fx-only"><label for="fxDist">인물 거리</label><input type="range" id="fxDist" min="0" max="1" step="0.01"><output id="oDist"></output></div>
+      <div class="ctl fx-only"><label for="fxDist">인물 거리</label><input type="range" id="fxDist" min="-1" max="1" step="0.01"><output id="oDist"></output></div>
+      <div class="ctl fx-only"><label for="fxMatch">빛·색 맞춤</label><input type="range" id="fxMatch" min="0" max="1" step="0.05"><output id="oMatch"></output></div>
       <div class="ctl"><label for="fxZoom">배경 화각</label><input type="range" id="fxZoom" min="1" max="2.5" step="0.01"><output id="oZoom"></output></div>
       <div class="ctl fx-only"><label for="fxPar">원근 연동</label><input type="range" id="fxPar" min="-1" max="1" step="0.05"><output id="oPar"></output></div>
       <div class="ctl fx-only"><label for="fxBlur">배경 심도</label><input type="range" id="fxBlur" min="0" max="1" step="0.05"><output id="oBlur"></output></div>
       <div class="ctl-btns">
         <button id="btnRecenter">↺ 기준 자세 재설정</button>
+        <button id="btnFit">✨ 자연스럽게 맞추기</button>
         <button id="btnCenter">인물 가운데로</button>
         <button id="btnAspect">화면비 9:16</button>
       </div>
@@ -479,7 +481,7 @@ const S = {
 };
 const amDir = () => !!S.st && S.st.directorId === S.me;
 const member = id => S.roster.find(m => m.id === id);
-const defaultState = dir => ({ directorId: dir, mode: 'cut', onAir: dir, subject: null, bench: [], aspect: '9:16', fx: { dist: .4, x: .5, y: 1, zoom: 1, par: .6, blur: .25 } });
+const defaultState = dir => ({ directorId: dir, mode: 'cut', onAir: dir, subject: null, bench: [], aspect: '9:16', fx: { dist: .4, x: .5, y: 1, zoom: 1, par: .6, blur: .25, match: .8 } });
 
 // ═════════ 회원가입 · 로그인 (기기 로컬) ═════════
 // 계정은 이 브라우저(localStorage)에 저장된다. '로그인 상태 유지'면 세션도 localStorage, 아니면 이번 창(sessionStorage)에만.
@@ -616,7 +618,7 @@ $('#joinCode').onkeydown = e => { if (e.key === 'Enter') startGroup(false) };
 
 // ═════════ 카메라 · 센서 ═════════
 async function getCam(facing) {
-  const base = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
+  const base = { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } };   // 사진 화질을 위해 1080p
   const tries = [{ ...base, facingMode: { exact: facing }, zoom: true }, { ...base, facingMode: { ideal: facing } }];
   let s, last;
   for (const video of tries) {
@@ -908,7 +910,7 @@ function announceJoin(m, full) {
 // ═════════ 미디어 경로: 스태프 카메라 → 감독, 감독의 PGM → 스태프 ═════════
 function tune(pc, kind) {
   if (!pc) return;
-  const enc = kind === 'cam' ? { maxBitrate: 2500000, maxFramerate: 30 } : { maxBitrate: 700000, maxFramerate: 24, scaleResolutionDownBy: 2 };
+  const enc = kind === 'cam' ? { maxBitrate: 4500000, maxFramerate: 30 } : { maxBitrate: 700000, maxFramerate: 24, scaleResolutionDownBy: 2 };
   const apply = (s, pref) => {
     const p = s.getParameters();
     if (!p.encodings?.length) p.encodings = [{}];
@@ -1005,8 +1007,60 @@ addEventListener('pagehide', () => leave());
 // ═════════ 인물 분리 (MediaPipe Selfie Segmenter) ═════════
 // 추론은 Web Worker에서: 모델이 느린 기기에서도 합성(메인 스레드)은 끊기지 않고, 마스크는 도착하는 대로 갈아 끼운다.
 // 느린 GPU(소프트웨어 WebGL 등)는 첫 프레임 이후 몇 장을 재 보고 CPU(WASM)로 바꾼다. 워커를 못 쓰면 메인 스레드로 돌린다.
+
+// 상자 흐림(가로·세로 누적합) — 마스크 다듬기와 가이드 필터에 쓴다
+function boxBlur(src, w, h, r) {
+  const tmp = new Float32Array(w * h), out = new Float32Array(w * h), k = 2 * r + 1;
+  for (let y = 0; y < h; y++) {
+    const o = y * w; let s = 0;
+    for (let x = -r; x <= r; x++) s += src[o + Math.min(w - 1, Math.max(0, x))];
+    for (let x = 0; x < w; x++) { tmp[o + x] = s / k; s += src[o + Math.min(w - 1, x + r + 1)] - src[o + Math.max(0, x - r)] }
+  }
+  for (let x = 0; x < w; x++) {
+    let s = 0;
+    for (let y = -r; y <= r; y++) s += tmp[Math.min(h - 1, Math.max(0, y)) * w + x];
+    for (let y = 0; y < h; y++) { out[y * w + x] = s / k; s += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x] }
+  }
+  return out;
+}
+// 신뢰도 → 알파(가장자리를 조여 원래 배경의 테두리를 걷어냄) + 안쪽 윤곽 띠(라이트 랩용) + 프레임 가장자리에 닿았는지
+function shapeMask(d, w, h, prev, r = 3, raw = false) {
+  const n = w * h, a = new Float32Array(n), alpha = new Uint8ClampedArray(n * 4), edge = new Uint8ClampedArray(n * 4);
+  const keep = prev && prev.length === n;
+  for (let i = 0; i < n; i++) {
+    let v = raw ? d[i] : (d[i] - .45) / .33;
+    if (!raw) v = v <= 0 ? 0 : v >= 1 ? 1 : v * v * (3 - 2 * v);
+    a[i] = keep ? prev[i] * .35 + v * .65 : v;   // 깜빡임 억제
+  }
+  const bl = boxBlur(a, w, h, r);
+  for (let i = 0; i < n; i++) {
+    const j = i * 4, e = (a[i] - bl[i]) * 2.5;
+    alpha[j] = alpha[j + 1] = alpha[j + 2] = edge[j] = edge[j + 1] = edge[j + 2] = 255;
+    alpha[j + 3] = a[i] * 255; edge[j + 3] = e > 0 ? Math.min(1, e) * 255 : 0;
+  }
+  const hit = (from, step, count) => { let c = 0; for (let i = 0, k = from; i < count; i++, k += step) if (a[k] > .5) c++; return c / count > .03 };
+  const touch = { l: hit(0, w, h), r: hit(w - 1, w, h), t: hit(0, 1, w), b: hit((h - 1) * w, 1, w) };
+  return { a, alpha, edge, touch };
+}
+// 빛 통계: 평균 색·밝기·대비(표준편차)·채도. wts = 화소별 가중치(인물 마스크), 없으면 알파 채널(useAlpha) 또는 1
+function lightStats(d, wts, step = 1, useAlpha = false) {
+  let n = 0, r = 0, g = 0, b = 0, L = 0, L2 = 0, C = 0;
+  for (let i = 0, k = 0; i < d.length; i += 4 * step, k += step) {
+    const w = wts ? wts[k] : useAlpha ? d[i + 3] / 255 : 1;
+    if (w < .05) continue;
+    const R = d[i] / 255, G = d[i + 1] / 255, B = d[i + 2] / 255, l = .299 * R + .587 * G + .114 * B;
+    n += w; r += R * w; g += G * w; b += B * w; L += l * w; L2 += l * l * w; C += (Math.max(R, G, B) - Math.min(R, G, B)) * w;
+  }
+  if (n < 5) return null;
+  L /= n;
+  return { r: r / n, g: g / n, b: b / n, L: Math.max(L, .03), sd: Math.sqrt(Math.max(L2 / n - L * L, 1e-4)), C: C / n };
+}
 const SEG_WORKER = `
-let seg, make, delegate, cost = 0, n = 0;
+${boxBlur}
+${shapeMask}
+${lightStats}
+let seg, make, delegate, cost = 0, n = 0, prev = null, lastTs = 0, bgLight = null, lightAt = 0;
+const lc = new OffscreenCanvas(32, 56), lx = lc.getContext('2d', { willReadFrequently: true });
 const oc = new OffscreenCanvas(256, 256), ox = oc.getContext('2d');
 onmessage = async ({ data: d }) => {
   if (d.vision) {
@@ -1019,20 +1073,40 @@ onmessage = async ({ data: d }) => {
     } catch (e) { postMessage({ error: String(e) }) }
     return;
   }
+  if (d.light) {   // 배경 카메라 프레임의 빛 (0.3초마다) — 인물이 서 있는 자리 뒤쪽만
+    try {
+      const fw = d.light.displayWidth || d.light.width, fh = d.light.displayHeight || d.light.height, [x0, y0, x1, y1] = d.rect || [0, 0, 1, 1];
+      lx.drawImage(d.light, x0 * fw, y0 * fh, Math.max(1, (x1 - x0) * fw), Math.max(1, (y1 - y0) * fh), 0, 0, 32, 56);
+      bgLight = lightStats(lx.getImageData(0, 0, 32, 56).data);
+    } catch {}
+    d.light.close();
+    return;
+  }
   try {
     ox.drawImage(d.frame, 0, 0, 256, 256);   // 모델 입력 크기로 줄이기 (워커 안에서)
-    const t0 = performance.now(), r = seg.segmentForVideo(oc, d.ts), m = r.confidenceMasks[0];
-    const mask = m.getAsFloat32Array().slice(), w = m.width, h = m.height;
+    lastTs = Math.max(d.ts, lastTs + 1);
+    const t0 = performance.now(), r = seg.segmentForVideo(oc, lastTs), m = r.confidenceMasks[0];
+    const conf = m.getAsFloat32Array().slice(), w = m.width, h = m.height;
     r.close();
-    postMessage({ mask, w, h }, [mask.buffer]);
+    if (d.still) return postMessage({ still: d.still, conf, w, h }, [conf.buffer]);   // 사진용: 원본 신뢰도 그대로
+    const sm = shapeMask(conf, w, h, prev); prev = sm.a;
+    let light = null;
+    if (bgLight && performance.now() - lightAt > 300 && w === 256 && h === 256) {   // 인물 빛: 마스크 가중 평균 (4칸 간격 표본)
+      lightAt = performance.now();
+      const sb = lightStats(ox.getImageData(0, 0, 256, 256).data, sm.a, 4);
+      if (sb) light = { bg: bgLight, sb };
+    }
+    postMessage({ alpha: sm.alpha, edge: sm.edge, touch: sm.touch, w, h, light }, [sm.alpha.buffer, sm.edge.buffer]);
     const c = performance.now() - t0; n++;
     if (n > 1) cost = n === 2 ? c : cost * .7 + c * .3;   // 첫 프레임은 워밍업이라 제외
     if (delegate === 'GPU' && n > 1 && (c > 250 || (n >= 4 && cost > 40))) { delegate = 'CPU'; const old = seg; seg = await make('CPU'); old.close() }
-  } catch (e) { postMessage({ error: String(e) }) }
+  } catch (e) { postMessage({ error: String(e), still: d.still }) }
   finally { d.frame.close() }
 };`;
 const SEG_IN = Object.assign(document.createElement('canvas'), { width: 256, height: 256 }), SEG_INX = SEG_IN.getContext('2d');
-const SEG = { st: 'idle', worker: null, busy: false, seg: null, delegate: '', make: null, cost: 0, n: 0, mask: null, mctx: null, img: null, prev: null, lastT: 0, lastVT: -1 };
+const SEG = { st: 'idle', worker: null, busy: false, seg: null, delegate: '', make: null, cost: 0, n: 0, seq: 0, mask: null, edge: null, touch: null, prev: null, lastT: 0, lastVT: -1 };
+const stills = new Map();
+let stillSeq = 0;
 function ensureSeg() {
   if (SEG.st !== 'idle') return;
   SEG.st = 'loading';
@@ -1046,7 +1120,8 @@ function ensureSeg() {
   w.onerror = bail;
   w.onmessage = ({ data: d }) => {
     if (d.ready) { SEG.worker = w; SEG.st = 'ready' }
-    else if (d.mask) { SEG.busy = false; putMask(d.mask, d.w, d.h) }
+    else if (d.still) { const p = stills.get(d.still); stills.delete(d.still); d.error ? p?.rej(new Error(d.error)) : p?.res(d) }
+    else if (d.alpha) { SEG.busy = false; putMask(d); if (d.light) applyLight(d.light.bg, d.light.sb) }
     else if (d.error) { if (!SEG.worker) return bail(d.error); console.warn('seg', d.error); SEG.busy = false }
   };
   w.postMessage({ vision: VISION, model: SEG_MODEL });
@@ -1067,10 +1142,14 @@ async function segOnMain() {
     toast('인물 분리 모델을 불러오지 못해 액자 모드로 합성해요');
   }
 }
-function segment(v) {
+function segment(v, bgV, rect) {
   if (v.currentTime === SEG.lastVT) return;   // 새 프레임일 때만 추론
   const now = performance.now();
   if (SEG.worker) {
+    if (bgV && now - (SEG.lightAt || 0) > 300) {   // 빛 맞춤용 배경 프레임 (복사 없이)
+      SEG.lightAt = now;
+      try { const lf = new VideoFrame(bgV); SEG.worker.postMessage({ light: lf, rect }, [lf]) } catch {}
+    }
     if (SEG.busy) return;
     SEG.busy = true; SEG.lastVT = v.currentTime;
     const post = frame => SEG.worker ? SEG.worker.postMessage({ frame, ts: now }, [frame]) : (frame.close(), SEG.busy = false);
@@ -1093,30 +1172,71 @@ function segment(v) {
     SEG.make('CPU').then(seg => { const old = SEG.seg; SEG.seg = seg; SEG.n = 0; old.close() }).catch(() => {});
   }
   const m = r.confidenceMasks?.[0];
-  if (m) putMask(m.getAsFloat32Array(), m.width, m.height);
+  if (m) { const sm = shapeMask(m.getAsFloat32Array(), m.width, m.height, SEG.prev); SEG.prev = sm.a; putMask({ ...sm, w: m.width, h: m.height }) }
   r.close?.();
 }
-function putMask(d, w, h) {
-  if (!SEG.mask || SEG.mask.width !== w || SEG.mask.height !== h) {
-    SEG.mask = Object.assign(document.createElement('canvas'), { width: w, height: h });
-    SEG.mctx = SEG.mask.getContext('2d');
-    SEG.img = SEG.mctx.createImageData(w, h); SEG.img.data.fill(255);
-    SEG.prev = new Float32Array(w * h);
-  }
-  const px = SEG.img.data, prev = SEG.prev;
-  for (let i = 0; i < d.length; i++) {
-    const a = prev[i] * .35 + clamp((d[i] - .3) / .4, 0, 1) * .65;   // 가장자리 부드럽게 + 깜빡임 억제
-    prev[i] = a; px[i * 4 + 3] = a * 255;
-  }
-  SEG.mctx.putImageData(SEG.img, 0, 0);
+const rgbaCanvas = (data, w, h, c = mk(w, h)) => { if (c.width !== w || c.height !== h) { c.width = w; c.height = h } c.getContext('2d').putImageData(new ImageData(data, w, h), 0, 0); return c };
+function putMask({ alpha, edge, touch, w, h }) {
+  SEG.mask = rgbaCanvas(alpha, w, h, SEG.mask || undefined);
+  SEG.edge = rgbaCanvas(edge, w, h, SEG.edge || undefined);
+  SEG.touch = touch; SEG.seq++;
 }
 
-// ═════════ PGM 합성 (감독 기기에서만) ═════════
+// ─── 사진용 마스크: 셔터 순간의 그 프레임을 다시 분리하고, 실제 이미지 윤곽을 따라 가장자리를 정밀하게 (가이드 필터) ───
+function stillConf(frame) {
+  if (SEG.worker) return new Promise((res, rej) => {
+    const id = ++stillSeq;
+    stills.set(id, { res, rej });
+    setTimeout(() => stills.delete(id) && rej(new Error('timeout')), 2500);
+    createImageBitmap(frame).then(b => SEG.worker ? SEG.worker.postMessage({ still: id, frame: b, ts: performance.now() }, [b]) : rej(new Error('no worker')));
+  });
+  SEG_INX.drawImage(frame, 0, 0, 256, 256);
+  const now = SEG.lastT = Math.max(performance.now(), SEG.lastT + 1);
+  const r = SEG.seg.segmentForVideo(SEG_IN, now), m = r.confidenceMasks[0];
+  const out = { conf: m.getAsFloat32Array().slice(), w: m.width, h: m.height };
+  r.close();
+  return Promise.resolve(out);
+}
+function guidedFilter(I, p, w, h, r, eps) {
+  const n = w * h, II = new Float32Array(n), Ip = new Float32Array(n);
+  for (let i = 0; i < n; i++) { II[i] = I[i] * I[i]; Ip[i] = I[i] * p[i] }
+  const mI = boxBlur(I, w, h, r), mp = boxBlur(p, w, h, r), mII = boxBlur(II, w, h, r), mIp = boxBlur(Ip, w, h, r);
+  const a = II, b = Ip;   // 재사용
+  for (let i = 0; i < n; i++) { const v = mII[i] - mI[i] * mI[i], cv = mIp[i] - mI[i] * mp[i]; a[i] = cv / (v + eps); b[i] = mp[i] - a[i] * mI[i] }
+  const ma = boxBlur(a, w, h, r), mb = boxBlur(b, w, h, r), q = mI;
+  for (let i = 0; i < n; i++) q[i] = ma[i] * I[i] + mb[i];
+  return q;
+}
+async function stillMask(frame) {
+  const { conf, w, h } = await stillConf(frame);
+  const [fw, fh] = size(frame), gh = Math.min(fh, 960), gw = Math.round(gh * fw / fh), n = gw * gh;
+  const sm = shapeMask(conf, w, h, null);
+  const c = mk(gw, gh), x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(rgbaCanvas(sm.alpha, w, h), 0, 0, gw, gh);
+  const pa = x.getImageData(0, 0, gw, gh).data;
+  x.globalCompositeOperation = 'copy'; x.drawImage(frame, 0, 0, gw, gh);
+  const im = x.getImageData(0, 0, gw, gh).data;
+  const I = new Float32Array(n), pr = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const j = i * 4; I[i] = (.299 * im[j] + .587 * im[j + 1] + .114 * im[j + 2]) / 255; pr[i] = pa[j + 3] / 255 }
+  const q = guidedFilter(I, pr, gw, gh, Math.max(2, Math.round(gw / 160)), 4e-4);   // 촘촘한 반경 → 실제 윤곽(머리카락·챙)을 따라감
+  for (let i = 0; i < n; i++) { const v = clamp((q[i] - .15) / .7, 0, 1); q[i] = v * v * (3 - 2 * v) }   // 또렷하되 계단 없이
+  const out = shapeMask(q, gw, gh, null, Math.max(3, Math.round(gw * 3 / 256)), true);   // 다듬은 알파 그대로 + 윤곽 띠
+  return { mask: rgbaCanvas(out.alpha, gw, gh), edge: rgbaCanvas(out.edge, gw, gh), touch: sm.touch };
+}
+
+// ═════════ 장면 합성 (라이브 PGM과 사진이 같은 코드 → 화면에서 본 그대로 찍힌다) ═════════
 const P = { x: 0, y: 0 };
-const PC = document.createElement('canvas'), PX = PC.getContext('2d');
-const BG = document.createElement('canvas'), BGX = BG.getContext('2d');
+const mk = (w = 1, h = 1) => Object.assign(document.createElement('canvas'), { width: w, height: h });
+const PC = mk(), PX = PC.getContext('2d'), LW = mk(), LWX = LW.getContext('2d'), BG = mk(), BGX = BG.getContext('2d');
+const STC = mk(32, 56), STX = STC.getContext('2d', { willReadFrequently: true });
+const FILTER_OK = (() => { const t = mk().getContext('2d'); t.filter = 'blur(1px)'; return t.filter === 'blur(1px)' })();
+const HM = { b: 1, c: 1, s: 1, tint: [255, 255, 255], at: 0 };   // 빛·색 맞춤 현재값 (배경을 따라 부드럽게 변함)
 const ready = v => v && v.readyState >= 2 && v.videoWidth > 0;
+const size = v => [v.videoWidth || v.width, v.videoHeight || v.height];
 const wrap180 = a => ((a + 540) % 360) - 180;
+const scaleOf = d => 1.15 - .85 * d, distOf = s => (1.15 - s) / .85;   // 인물 거리 ↔ 화면 높이 대비 크기
+const subjectRect = (W, H, fx, sw, sh) => { const h = H * scaleOf(fx.dist), w = h * sw / sh; return { x: fx.x * W - w / 2, y: fx.y * H - h, w, h } };
+const isFusion = st => st.mode === 'fusion' && st.subject && st.subject !== st.onAir;
 
 function loop(now) {
   S.raf = requestAnimationFrame(loop);
@@ -1126,11 +1246,8 @@ function loop(now) {
   if (now - (S.uiAt || 0) > 500) { S.uiAt = now; sensorInfo(now) }
 }
 function drawProgram() {
-  const ctx = S.pctx, W = S.pgm.width, H = S.pgm.height, st = S.st, fx = st.fx;
-  const bg = S.vids.get(st.onAir);
-  const fusion = st.mode === 'fusion' && st.subject && st.subject !== st.onAir;
-  const sv = fusion ? S.vids.get(st.subject) : null;
-
+  const ctx = S.pctx, W = S.pgm.width, H = S.pgm.height, st = S.st;
+  const bg = S.vids.get(st.onAir), fusion = isFusion(st), sv = fusion ? S.vids.get(st.subject) : null;
   // 원근 연동: 주인공 폰의 회전 → 배경 시차
   let tx = 0, ty = 0;
   const t = fusion ? (st.subject === S.me ? (S.myTele && { o: S.myTele }) : S.tele.get(st.subject)) : null;
@@ -1140,46 +1257,126 @@ function drawProgram() {
     ty = clamp((t.o.p - S.base.p) / 20);
   }
   P.x += (tx - P.x) * .2; P.y += (ty - P.y) * .2;
-
-  if (ready(bg)) {
-    const par = fusion ? fx.par : 0;
-    const zoom = fx.zoom * (1 + .25 * Math.abs(par)) * (fusion ? 1 + fx.blur * .06 : 1);
-    if (fusion && fx.blur > .01) {
-      // 흐린 배경엔 해상도가 필요 없다: 1/k 크기에서 흐린 뒤 늘려 그리면 GPU 비용이 k²배 준다 (filter 미지원 Safari도 축소만으로 부드러워짐)
-      const k = 2 + fx.blur * 4, bw = Math.round(W / k), bh = Math.round(H / k);
-      if (BG.width !== bw || BG.height !== bh) { BG.width = bw; BG.height = bh }
-      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);   // 흐린 가장자리의 반투명이 이전 프레임과 섞이지 않게
-      BGX.filter = `blur(${(fx.blur * 9 * Math.min(W, H) / 720 / k).toFixed(2)}px)`;
-      drawCover(BGX, bg, bw, bh, zoom, -P.x * par, P.y * par);
-      ctx.drawImage(BG, 0, 0, W, H);
-    } else drawCover(ctx, bg, W, H, zoom, -P.x * par, P.y * par);   // 폰이 오른쪽으로 돌면 실제 카메라처럼 배경은 왼쪽으로
-  } else standby(ctx, W, H, st.onAir ? '배경 카메라 연결 중…' : '카메라 타일을 눌러 ON AIR 하세요');
-
-  if (fusion && ready(sv)) drawSubject(ctx, sv, W, H, fx);
+  if (fusion && ready(sv) && SEG.st === 'ready') {
+    const [sw, sh] = size(sv), R = subjectRect(W, H, st.fx, sw, sh);   // 인물이 놓인 자리(정규화) → 그 뒤 배경의 빛을 잰다
+    segment(sv, ready(bg) ? bg : null, [clamp(R.x / W, 0, 1), clamp(R.y / H, 0, 1), clamp((R.x + R.w) / W, 0, 1), clamp((R.y + R.h) / H, 0, 1)]);
+  }
+  if (!ready(bg)) standby(ctx, W, H, st.onAir ? '배경 카메라 연결 중…' : '카메라 타일을 눌러 ON AIR 하세요');
+  const segOk = SEG.st === 'ready' && SEG.mask;
+  compose(ctx, W, H, { bg: ready(bg) ? bg : null, subj: ready(sv) ? sv : null, mask: segOk && SEG.mask, edge: segOk && SEG.edge, touch: SEG.touch, fx: st.fx, par: P, fusion, sample: true });
+  if (fusion && S.fitAt != null && segOk && SEG.seq > S.fitAt + 1) { S.fitAt = null; autoFit() }   // 융합 직후 한 번: 자연스러운 배치
 }
 // PGM·사진·영상은 반전하지 않는다: 카메라 원본 프레임 = 남이 찍어준 본상. (거울상은 셀카 미리보기에만)
 function drawCover(ctx, v, W, H, zoom, ox, oy) {
-  const vw = v.videoWidth, vh = v.videoHeight, s = Math.max(W / vw, H / vh) * zoom, dw = vw * s, dh = vh * s;
+  const [vw, vh] = size(v), s = Math.max(W / vw, H / vh) * zoom, dw = vw * s, dh = vh * s;
   ctx.drawImage(v, (W - dw) / 2 + clamp(ox) * (dw - W) / 2, (H - dh) / 2 + clamp(oy) * (dh - H) / 2, dw, dh);
 }
-function drawSubject(ctx, v, W, H, fx) {
-  const vw = v.videoWidth, vh = v.videoHeight;
-  if (SEG.st === 'ready') segment(v);
-  if (SEG.st === 'ready' && SEG.mask) {
-    const pw = Math.min(vw, 640), ph = Math.round(pw * vh / vw);
-    if (PC.width !== pw || PC.height !== ph) { PC.width = pw; PC.height = ph }
-    PX.globalCompositeOperation = 'copy'; PX.drawImage(v, 0, 0, pw, ph);
-    PX.globalCompositeOperation = 'destination-in'; PX.drawImage(SEG.mask, 0, 0, pw, ph);
-    PX.globalCompositeOperation = 'source-over';
-    const h = H * (1.15 - .85 * fx.dist), w = h * vw / vh;
-    ctx.drawImage(PC, fx.x * W - w / 2, fx.y * H - h, w, h);
-  } else {   // 모델 준비 전(첫 마스크 도착 전)/실패: 둥근 액자로 합성
-    const h = H * (1.15 - .85 * fx.dist) * .5, w = h * vw / vh, x = fx.x * W - w / 2, y = fx.y * H - h - H * .03, r = Math.min(w, h) * .08;
-    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.clip();
-    ctx.drawImage(v, x, y, w, h); ctx.restore();
-    ctx.lineWidth = Math.min(W, H) / 200; ctx.strokeStyle = 'rgba(255,255,255,.9)';
-    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.stroke();
+function compose(ctx, W, H, f) {
+  const fx = f.fx, k = fx.match ?? .8;
+  // 1) 배경: 화각(줌)·원근 연동·심도 흐림 — 흐린 배경엔 해상도가 필요 없어 1/k 크기에서 흐린 뒤 늘린다
+  if (f.bg) {
+    const par = f.fusion ? fx.par : 0;
+    const zoom = fx.zoom * (1 + .25 * Math.abs(par)) * (f.fusion ? 1 + fx.blur * .06 : 1);
+    const ox = -f.par.x * par, oy = f.par.y * par;   // 폰이 오른쪽으로 돌면 실제 카메라처럼 배경은 왼쪽으로
+    if (f.fusion && fx.blur > .01) {
+      const kk = 2 + fx.blur * 4, bw = Math.round(W / kk), bh = Math.round(H / kk);
+      if (BG.width !== bw || BG.height !== bh) { BG.width = bw; BG.height = bh }
+      BGX.filter = `blur(${(fx.blur * 9 * Math.min(W, H) / 720 / kk).toFixed(2)}px)`;
+      drawCover(BGX, f.bg, bw, bh, zoom, ox, oy);
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(BG, 0, 0, W, H);
+    } else drawCover(ctx, f.bg, W, H, zoom, ox, oy);
   }
+  if (!f.fusion || !f.subj) return;
+  const [sw, sh] = size(f.subj), R = subjectRect(W, H, fx, sw, sh);
+  if (!f.mask) return framePip(ctx, W, H, f.subj, fx, sw, sh);
+  if (f.sample && f.bg && !SEG.worker) sampleLight(ctx, W, H, R, f.subj, f.mask);   // 워커가 없을 때만 (GPU 되읽기라 드물게)
+  const pw = Math.max(2, Math.round(Math.min(sw, R.w, 1440))), ph = Math.max(2, Math.round(pw * sh / sw));
+  if (PC.width !== pw || PC.height !== ph) { PC.width = pw; PC.height = ph }
+  // 2) 인물 + 빛·색 맞춤: 배경의 밝기·대비·채도·색온도에 맞춘다
+  const b = 1 + (HM.b - 1) * k, c = 1 + (HM.c - 1) * k, s = 1 + (HM.s - 1) * k;
+  const harm = k > .01;   // 0%면 맞춤 과정을 통째로 건너뜀
+  PX.globalCompositeOperation = 'copy';
+  PX.filter = harm && FILTER_OK ? `brightness(${b.toFixed(3)}) contrast(${c.toFixed(3)}) saturate(${s.toFixed(3)})` : 'none';
+  PX.drawImage(f.subj, 0, 0, pw, ph);
+  PX.filter = 'none';
+  if (harm) {
+    PX.globalCompositeOperation = 'multiply';
+    if (!FILTER_OK && b < 1) { const g = b * 255 | 0; PX.fillStyle = `rgb(${g},${g},${g})`; PX.fillRect(0, 0, pw, ph) }   // filter 미지원: 밝기만이라도
+    PX.globalAlpha = .6 * k; PX.fillStyle = `rgb(${HM.tint.map(v => v | 0).join(',')})`; PX.fillRect(0, 0, pw, ph); PX.globalAlpha = 1;
+  }
+  // 3) 라이트 랩: 뒤 배경의 빛이 인물 윤곽에 번져 들게 (실사 합성의 기본기)
+  if (harm && f.edge && f.bg) {   // 어차피 흐린 빛이라 1/4 해상도로 계산
+    const lw = Math.max(2, pw >> 2), lh = Math.max(2, ph >> 2);
+    if (LW.width !== lw || LW.height !== lh) { LW.width = lw; LW.height = lh }
+    LWX.globalCompositeOperation = 'copy';
+    LWX.filter = FILTER_OK ? `blur(${Math.max(1, lw / 50).toFixed(1)}px)` : 'none';
+    LWX.drawImage(ctx.canvas, R.x, R.y, R.w, R.h, 0, 0, lw, lh);
+    LWX.filter = 'none';
+    LWX.globalCompositeOperation = 'destination-in'; LWX.drawImage(f.edge, 0, 0, lw, lh);
+    PX.globalCompositeOperation = 'screen'; PX.globalAlpha = .7 * k; PX.drawImage(LW, 0, 0, pw, ph); PX.globalAlpha = 1;
+  }
+  // 4) 인물만 남기기
+  PX.globalCompositeOperation = 'destination-in'; PX.drawImage(f.mask, 0, 0, pw, ph);
+  // 5) 화면 안쪽에서 잘린 몸의 가장자리는 칼선 대신 서서히 사라지게
+  const t = f.touch || {}, fade = (x0, y0, x1, y1) => { const g = PX.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, '#000'); PX.fillStyle = g; PX.fillRect(0, 0, pw, ph) };
+  if (t.l && R.x > 1) fade(0, 0, pw * .14, 0);
+  if (t.r && R.x + R.w < W - 1) fade(pw, 0, pw * .86, 0);
+  if (t.b && R.y + R.h < H - 1) fade(0, ph, 0, ph * .88);
+  if (t.t && R.y > 1) fade(0, 0, 0, ph * .1);
+  PX.globalCompositeOperation = 'source-over';
+  ctx.drawImage(PC, R.x, R.y, R.w, R.h);
+}
+// 배경(인물 뒤 영역)과 인물의 빛을 재서 맞출 목표를 정한다 (0.3초마다, 작은 표본으로)
+function sampleLight(ctx, W, H, R, subj, mask) {
+  const now = performance.now();
+  if (now - HM.at < 1000) return;
+  HM.at = now;
+  const x0 = Math.max(0, R.x), y0 = Math.max(0, R.y), x1 = Math.min(W, R.x + R.w), y1 = Math.min(H, R.y + R.h);
+  if (x1 - x0 < 8 || y1 - y0 < 8) return;
+  STX.globalCompositeOperation = 'copy'; STX.drawImage(ctx.canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, 32, 56);
+  const bg = lightStats(STX.getImageData(0, 0, 32, 56).data);
+  STX.drawImage(subj, 0, 0, 32, 56);
+  STX.globalCompositeOperation = 'destination-in'; STX.drawImage(mask, 0, 0, 32, 56);
+  applyLight(bg, lightStatsMain(STX.getImageData(0, 0, 32, 56).data));
+}
+function applyLight(bg, sb) {   // 측정값 → 맞출 목표 (부드럽게 따라감)
+  if (!bg || !sb) return;
+  const ease = (cur, tgt) => cur + (tgt - cur) * .35, m = Math.max(bg.r, bg.g, bg.b) || 1;
+  HM.b = ease(HM.b, clamp(Math.pow(bg.L / sb.L, .6), .55, 1.35));
+  HM.c = ease(HM.c, clamp(Math.pow(bg.sd / sb.sd, .35), .8, 1.2));
+  HM.s = ease(HM.s, clamp(Math.pow((bg.C + .02) / (sb.C + .02), .5), .7, 1.2));
+  HM.tint = HM.tint.map((v, i) => ease(v, [bg.r, bg.g, bg.b][i] / m * 255));
+}
+function lightStatsMain(d) { return lightStats(d, null, 1, true) }
+function framePip(ctx, W, H, v, fx, sw, sh) {   // 인물 분리 준비 전/실패: 둥근 액자로 합성
+  const h = H * scaleOf(Math.max(fx.dist, 0)) * .5, w = h * sw / sh, x = fx.x * W - w / 2, y = Math.min(fx.y, 1) * H - h - H * .03, r = Math.min(w, h) * .08;
+  ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.clip();
+  ctx.drawImage(v, x, y, w, h); ctx.restore();
+  ctx.lineWidth = Math.min(W, H) / 200; ctx.strokeStyle = 'rgba(255,255,255,.9)';
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.stroke();
+}
+// 자연스러운 배치: 셀카 프레임에 잘린 몸의 가장자리를 사진 테두리에 맞춘다 (실제 사진처럼 몸이 화면 밖으로 이어지게)
+function autoFit() {
+  const v = S.vids.get(S.st.subject), t = SEG.touch;
+  if (!ready(v) || !t) return;
+  const W = S.pgm.width, H = S.pgm.height, [sw, sh] = size(v), r = sw / sh, fx = S.st.fx;
+  let h = H * scaleOf(fx.dist);
+  if (t.l && t.r) h = Math.max(h, W / r);
+  if (t.t && t.b) h = Math.max(h, H);
+  const w = h * r, p = { dist: distOf(h / H), x: fx.x, y: fx.y };
+  if (t.b) p.y = 1; else if (t.t) p.y = h / H;
+  if (t.l && t.r) p.x = .5; else if (t.l) p.x = w / 2 / W; else if (t.r) p.x = 1 - w / 2 / W;
+  setFx(p);
+}
+function snapFx(p) {   // 끌 때 잘린 가장자리가 테두리 근처면 붙인다
+  const v = S.vids.get(S.st.subject), t = SEG.touch;
+  if (!ready(v) || !t) return p;
+  const W = S.pgm.width, H = S.pgm.height, [sw, sh] = size(v), R = subjectRect(W, H, { ...S.st.fx, ...p }, sw, sh);
+  if (t.b && Math.abs(R.y + R.h - H) < H * .05) p.y = 1;
+  if (t.l && Math.abs(R.x) < W * .05) p.x = R.w / 2 / W;
+  if (t.r && Math.abs(R.x + R.w - W) < W * .05) p.x = 1 - R.w / 2 / W;
+  return p;
 }
 function standby(ctx, W, H, text) {
   const g = ctx.createLinearGradient(0, 0, W, H);
@@ -1232,13 +1429,13 @@ pgmEl.addEventListener('pointermove', e => {
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const pts = [...ptrs.values()], c = centroid(pts);
   const p = { x: clamp(g0.fx.x + (c.x - g0.c.x) / g0.r.width, -.2, 1.2), y: clamp(g0.fx.y + (c.y - g0.c.y) / g0.r.height, .3, 1.6) };
-  if (pts.length > 1 && g0.d) p.dist = clamp(g0.fx.dist - Math.log(gap(pts) / g0.d) * .8, 0, 1);
-  setFx(p);
+  if (pts.length > 1 && g0.d) p.dist = clamp(g0.fx.dist - Math.log(gap(pts) / g0.d) * .8, -1, 1);
+  setFx(snapFx(p));
 });
 for (const t of ['pointerup', 'pointercancel']) pgmEl.addEventListener(t, e => { ptrs.delete(e.pointerId); gStart() });
 pgmEl.addEventListener('wheel', e => {
   if (!amDir() || S.st.mode !== 'fusion') return;
-  e.preventDefault(); setFx({ dist: clamp(S.st.fx.dist + e.deltaY * .001, 0, 1) });
+  e.preventDefault(); setFx(snapFx({ dist: clamp(S.st.fx.dist + e.deltaY * .001, -1, 1) }));
 }, { passive: false });
 
 // ═════════ 렌더링 (UI) ═════════
@@ -1291,8 +1488,9 @@ function renderCtl() {
   $('#btnFusion').classList.toggle('on', fusion); $('#btnFusion').setAttribute('aria-pressed', fusion);
   modeBadge();
   $('#pgmWrap').classList.toggle('fusion', fusion);
-  syncRange('#fxDist', fx.dist); syncRange('#fxZoom', fx.zoom); syncRange('#fxPar', fx.par); syncRange('#fxBlur', fx.blur);
-  $('#oDist').textContent = `크기 ${Math.round((1.15 - .85 * fx.dist) * 100)}%`;
+  syncRange('#fxDist', fx.dist); syncRange('#fxZoom', fx.zoom); syncRange('#fxPar', fx.par); syncRange('#fxBlur', fx.blur); syncRange('#fxMatch', fx.match ?? .8);
+  $('#oDist').textContent = `크기 ${Math.round(scaleOf(fx.dist) * 100)}%`;
+  $('#oMatch').textContent = Math.round((fx.match ?? .8) * 100) + '%';
   $('#oZoom').textContent = fx.zoom.toFixed(2) + '×';
   $('#oPar').textContent = Math.round(fx.par * 100) + '%';
   $('#oBlur').textContent = Math.round(fx.blur * 100) + '%';
@@ -1409,7 +1607,7 @@ function toggleFusion() {
     Bot.say('융합하려면 <b>배경 카메라</b>(후면 풍경)와 <b>주인공 카메라</b>(전면 셀카)가 각각 필요해요. 코드를 공유해 스태프를 초대하세요!', 6000, true);
     return;
   }
-  S.base = null;
+  S.base = null; S.fitAt = SEG.seq;
   setState({ mode: 'fusion', subject: subj, onAir: bg });
   ensureSeg();
   Bot.once('fusion');
@@ -1424,7 +1622,7 @@ function setSubject(id) {
   if (st.mode === 'fusion' && st.subject === id) return setState({ mode: 'cut', subject: null });
   const onAir = st.onAir && st.onAir !== id ? st.onAir : (st.subject && st.subject !== id ? st.subject : pickCam(id, 'environment'));
   if (!onAir || onAir === id) { Bot.say('주인공 말고 <b>배경을 찍을 카메라</b>가 한 대 더 필요해요.', 4500, true); return }
-  S.base = null;
+  S.base = null; S.fitAt = SEG.seq;
   setState({ subject: id, onAir, mode: 'fusion' });
   ensureSeg();
   Bot.once('fusion');
@@ -1446,6 +1644,8 @@ $('#fxDist').oninput = e => setFx({ dist: +e.target.value });
 $('#fxZoom').oninput = e => setFx({ zoom: +e.target.value });
 $('#fxPar').oninput = e => setFx({ par: +e.target.value });
 $('#fxBlur').oninput = e => setFx({ blur: +e.target.value });
+$('#fxMatch').oninput = e => setFx({ match: +e.target.value });
+$('#btnFit').onclick = autoFit;
 $('#btnRecenter').onclick = () => { S.base = null; toast('지금 주인공 폰의 자세를 기준(정면)으로 맞췄어요') };
 $('#btnCenter').onclick = () => setFx({ x: .5, y: 1, dist: .4 });
 $('#btnAspect').onclick = () => setState({ aspect: S.st.aspect === '9:16' ? '16:9' : '9:16' });
@@ -1517,9 +1717,27 @@ $('#mLeave').onclick = () => {
 };
 
 // ═════════ 촬영 · 작품 ═════════
-function shoot() {
-  S.pgm.toBlob(b => b && addWork('photo', b), 'image/jpeg', .92);
+// 진짜 사진: 셔터 순간 두 카메라의 원본 프레임을 같이 붙잡아, 그 프레임으로 인물을 다시 분리·정밀 보정하고 1080p로 새로 그린다
+let shooting = false;
+async function shoot() {
   const f = $('#flash'); f.classList.remove('go'); f.offsetWidth; f.classList.add('go');
+  if (shooting) return;
+  shooting = true;
+  const st = S.st, fusion = isFusion(st), bgV = S.vids.get(st.onAir), sV = fusion ? S.vids.get(st.subject) : null;
+  let bgF, sF;
+  try {
+    [bgF, sF] = await Promise.all([ready(bgV) ? createImageBitmap(bgV) : null, ready(sV) ? createImageBitmap(sV) : null]);
+    if (!bgF && !sF) { S.pgm.toBlob(b => b && addWork('photo', b), 'image/jpeg', .92); return }
+    let m = null;
+    if (sF && SEG.st === 'ready') m = await stillMask(sF).catch(e => (console.warn('still mask', e), null));
+    const [W, H] = st.aspect === '16:9' ? [1920, 1080] : [1080, 1920], c = mk(W, H), x = c.getContext('2d');
+    if (!bgF) standby(x, W, H, '');
+    const segOk = SEG.st === 'ready' && SEG.mask;
+    compose(x, W, H, { bg: bgF, subj: sF, mask: m?.mask || (segOk && SEG.mask), edge: m?.edge || (segOk && SEG.edge), touch: m?.touch || SEG.touch, fx: st.fx, par: P, fusion });
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .95));
+    if (blob) addWork('photo', blob);
+  } catch (e) { console.warn('shoot', e); S.pgm.toBlob(b => b && addWork('photo', b), 'image/jpeg', .92) }
+  finally { bgF?.close(); sF?.close(); shooting = false }
 }
 let recArming = false;
 async function toggleRec() {
