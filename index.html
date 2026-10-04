@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="description" content="여러 대의 휴대폰 카메라를 하나의 카메라처럼 융합해, 감독 한 명이 사진·영상을 연출하는 단일 HTML 웹앱">
+<title>FusionCam · 멀티 카메라 융합 스튜디오</title>
+<style>
+:root{
+  --bg:#0b0d10;--panel:#14171c;--panel2:#1c2129;--line:#2a313b;--text:#f3f5f7;--mute:#9aa4b0;
+  --accent:#ffb547;--accent-ink:#241600;--onair:#ff453a;--subj:#32d74b;--teal:#5ad1c8;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",Roboto,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text)}
+body{overflow:hidden;overscroll-behavior:none;-webkit-font-smoothing:antialiased;font-size:15px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:disabled{opacity:.45;cursor:default}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── 로그인 · 로비 ── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column}
+.page{overflow-y:auto}
+.wrap{width:100%;max-width:440px;margin:0 auto;padding:calc(28px + var(--st)) 16px calc(28px + var(--sb))}
+.brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin:8px 0 22px}
+.brand h1{margin:0;font-size:26px;letter-spacing:-.02em}
+.brand p{margin:0;color:var(--mute);line-height:1.5}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:17px}
+.card .sub{margin:0 0 14px;color:var(--mute);font-size:13.5px;line-height:1.55}
+.field{display:block;margin-bottom:12px}
+.field span{display:block;font-size:13px;color:var(--mute);margin-bottom:6px}
+.in{width:100%;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);padding:0 14px;outline:none}
+.in:focus{border-color:var(--accent)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:14px;font-weight:700;background:var(--panel2);border:1px solid var(--line)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--panel2);border-radius:12px;padding:4px;margin-bottom:16px}
+.tabs button{height:40px;border-radius:9px;color:var(--mute);font-weight:600}
+.tabs button.on{background:var(--bg);color:var(--text)}
+.err{color:#ff8a80;font-size:13.5px;min-height:1.2em;margin:8px 2px 0}
+.fine{color:var(--mute);font-size:12.5px;text-align:center;line-height:1.55}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{height:50px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600}
+.seg button.on{border-color:var(--accent);background:rgba(255,181,71,.12);color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chips button{min-width:46px;height:38px;padding:0 10px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-weight:600}
+.chips button.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.lobby-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px;font-size:16px}
+.link{color:var(--mute);text-decoration:underline;font-size:13.5px;padding:8px}
+.code-in{text-transform:uppercase;letter-spacing:.3em;text-align:center;font-weight:700;font-size:20px;margin-bottom:12px}
+.lbl{display:block;font-size:13px;color:var(--mute);margin-bottom:8px;font-weight:600}
+
+/* ── 스튜디오 ── */
+.topbar{display:flex;align-items:center;gap:6px;padding:calc(8px + var(--st)) 10px 8px;min-height:52px;flex:0 0 auto;overflow-x:auto;scrollbar-width:none}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap;flex:0 0 auto}
+.chip.code{letter-spacing:.08em}
+.chip.dir{background:rgba(255,181,71,.14);border-color:rgba(255,181,71,.45);color:var(--accent)}
+.spacer{flex:1}
+.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto}
+.iconbtn:hover{background:var(--panel2)}
+.view{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.monitor{flex:1;min-height:140px;display:grid;place-items:center;padding:4px 10px 6px}
+.pgm-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#pgm{display:block;width:100%;height:100%;touch-action:none}
+.pgm-wrap.fusion #pgm{cursor:grab}
+.badges{position:absolute;top:8px;left:8px;display:flex;gap:6px;pointer-events:none}
+.badge{font-size:11px;font-weight:800;letter-spacing:.06em;padding:4px 7px;border-radius:6px;background:rgba(0,0,0,.55)}
+.badge.pgm{color:var(--accent)} .badge.fx{color:var(--teal)} .badge.rec{background:var(--onair);color:#fff}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.flash.go{animation:flash .35s ease-out}
+@keyframes flash{from{opacity:.85}to{opacity:0}}
+.adjust{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);padding:8px 14px 2px;max-height:40vh;overflow:auto}
+.ctl{display:grid;grid-template-columns:78px 1fr 58px;align-items:center;gap:10px;min-height:38px}
+.ctl label{font-size:13px;color:var(--mute);font-weight:600}
+.ctl output{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.ctl.dim{opacity:.45}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
+.ctl-btns{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 4px}
+.ctl-btns button,.pill{height:34px;padding:0 12px;border-radius:17px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap}
+.sensor{font-size:12px;color:var(--mute);margin:4px 0 8px}
+.tiles{flex:0 0 auto;display:flex;gap:8px;overflow-x:auto;padding:8px 10px;scrollbar-width:none}
+.tile{position:relative;flex:0 0 auto;width:72px;height:92px;border-radius:12px;overflow:hidden;background:var(--panel2);border:2px solid var(--line)}
+.tile video{width:100%;height:100%;object-fit:cover;display:block}
+.tile .lab{position:absolute;left:0;right:0;bottom:0;padding:14px 5px 4px;font-size:10.5px;font-weight:800;line-height:1.2;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.85))}
+.tile .lab small{display:block;font-weight:500;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .tag{position:absolute;top:4px;left:4px;font-size:9.5px;font-weight:800;padding:2px 5px;border-radius:5px;color:#fff}
+.tile.onair{border-color:var(--onair)} .tile.onair .tag{background:var(--onair)}
+.tile.subj{border-color:var(--subj)} .tile.subj .tag{background:var(--subj);color:#03250b}
+.tile.bench{opacity:.5;filter:grayscale(1)}
+.tile .wait{position:absolute;inset:0;display:grid;place-items:center;font-size:10.5px;color:var(--mute)}
+.mirror{transform:scaleX(-1)}
+.dock{flex:0 0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;justify-items:center;padding:4px 8px calc(10px + var(--sb))}
+.dbtn{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--mute);font-weight:600;min-width:58px;padding:4px}
+.dbtn.on{color:var(--accent)}
+.dbtn b{color:var(--accent)}
+.shutter{width:64px;height:64px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px var(--bg),0 0 0 7px #fff;transition:transform .1s}
+.shutter:active{transform:scale(.92)}
+.recbtn{width:54px;height:54px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center}
+.recbtn::after{content:"";width:34px;height:34px;border-radius:50%;background:var(--onair);transition:all .2s}
+.recbtn.on::after{width:20px;height:20px;border-radius:5px}
+
+.staff{flex:1;min-height:0;position:relative;overflow:hidden;background:#000}
+#selfVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tframe{position:absolute;inset:0;pointer-events:none;transition:box-shadow .2s}
+.tframe.onair{box-shadow:inset 0 0 0 5px var(--onair)}
+.tframe.subj{box-shadow:inset 0 0 0 5px var(--subj)}
+.tally{position:absolute;top:12px;left:12px;padding:6px 11px;border-radius:14px;font-size:12.5px;font-weight:800;letter-spacing:.03em;background:rgba(0,0,0,.6)}
+.tally.onair{background:var(--onair)} .tally.subj{background:var(--subj);color:#03250b}
+.pip{position:absolute;top:12px;right:12px;width:min(32vw,170px);min-height:60px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.85);background:#111;transition:width .25s}
+.pip.big{width:min(72vw,440px)}
+.pip video{display:block;width:100%;height:auto}
+.pip span{position:absolute;left:6px;top:6px;font-size:10px;font-weight:800;padding:2px 5px;border-radius:4px;background:rgba(0,0,0,.6);color:var(--accent)}
+.staff-msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:12px 16px;border-radius:14px;background:rgba(0,0,0,.62);text-align:center;font-size:14px;line-height:1.5;max-width:78%}
+.sdock{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:12px;padding:14px 16px calc(16px + var(--sb));background:linear-gradient(transparent,rgba(0,0,0,.72))}
+.round{width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.3);display:grid;place-items:center;flex:0 0 auto}
+.zoomctl{flex:1;display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+
+/* ── 메뉴 · 시트 · 토스트 ── */
+.menu{position:fixed;top:calc(56px + var(--st));right:10px;z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:210px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.menu button{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:10px;font-weight:600}
+.menu button:hover{background:var(--panel2)}
+.menu .danger{color:#ff8a80}
+.sheetwrap{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.sheet{position:relative;width:100%;max-width:520px;max-height:84vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sb));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:0}}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+.sheet h3{margin:0;font-size:18px}
+.sheet .sub{margin:4px 0 0;color:var(--mute);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 6px}
+.act{min-height:52px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-weight:700;font-size:14px;padding:8px}
+.act.red{border-color:var(--onair);color:#ff8a80}
+.act.green{border-color:var(--subj);color:#7ee79a}
+.baton{width:100%;margin-top:10px;min-height:52px;border-radius:14px;border:1px solid var(--accent);color:var(--accent);font-weight:800}
+.baton.confirm{background:var(--accent);color:var(--accent-ink)}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.work{background:var(--panel2);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.work img,.work video{display:block;width:100%;height:220px;object-fit:contain;background:#000}
+.work .wb{display:flex;border-top:1px solid var(--line)}
+.work .wb button{flex:1;height:38px;font-size:12.5px;font-weight:600}
+.work .wb button+button{border-left:1px solid var(--line)}
+.toast{position:fixed;left:50%;top:calc(62px + var(--st));transform:translateX(-50%);z-index:60;background:rgba(20,23,28,.95);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:13.5px;font-weight:600;pointer-events:none;max-width:calc(100vw - 32px);text-align:center;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+
+/* ── 설명 로봇 ‘찰칵이’ ── */
+#bot{position:fixed;left:0;top:0;z-index:55;width:50px;height:50px;transform:translate(-80px,-80px);transition:transform .32s cubic-bezier(.3,1.3,.5,1),opacity .2s;touch-action:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+#bot.drag{transition:opacity .2s;cursor:grabbing}
+#bot.quiet{opacity:.32}
+#bot svg{width:100%;height:100%;animation:bob 3.2s ease-in-out infinite}
+#bot .eye{animation:blink 4.6s infinite;transform-origin:center;transform-box:fill-box}
+#bot.talk .led{fill:var(--accent);animation:led .9s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes led{50%{opacity:.35}}
+#bubble{position:fixed;z-index:56;left:0;top:0;width:max-content;max-width:min(290px,calc(100vw - 24px));background:#fbf6ec;color:#1d1a14;border-radius:14px;padding:11px 13px 10px;font-size:14px;line-height:1.5;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+#bubble b{color:#a24f00}
+#bText{position:relative;z-index:1}
+#bTail{position:absolute;width:12px;height:12px;background:#fbf6ec;transform:rotate(45deg)}
+.b-row{position:relative;z-index:1;display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px}
+.b-row button{height:30px;padding:0 11px;border-radius:15px;background:#efe6d4;font-weight:700;color:#1d1a14}
+.b-row .b-pri{background:#1d1a14;color:#fbf6ec}
+#bStep{color:#7a705f;margin-right:auto}
+#spot{position:fixed;z-index:54;pointer-events:none;border:2px solid var(--accent);border-radius:14px;box-shadow:0 0 0 4px rgba(255,181,71,.22);animation:spot 1.4s ease-in-out infinite}
+@keyframes spot{50%{box-shadow:0 0 0 10px rgba(255,181,71,0)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (min-width:900px){.tile{width:88px;height:112px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+</head>
+<body>
+<noscript>이 앱은 자바스크립트가 필요합니다.</noscript>
+
+<!-- ───────── 로그인 / 회원가입 ───────── -->
+<section class="screen page" data-screen="auth" hidden>
+  <div class="wrap">
+    <header class="brand">
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd27e"/><stop offset="1" stop-color="#ff9a3c"/></linearGradient><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fe3da"/><stop offset="1" stop-color="#2f8fa0"/></linearGradient></defs><circle cx="24" cy="32" r="17" fill="url(#lg1)"/><circle cx="40" cy="32" r="17" fill="url(#lg2)" opacity=".82"/><circle cx="32" cy="32" r="6" fill="#0b0d10"/></svg>
+      <h1>FusionCam</h1>
+      <p>여러 대의 휴대폰을 <b>하나의 카메라</b>로.<br>풍경은 그 사람의 폰에서, 인물은 내 폰에서.</p>
+    </header>
+    <div class="card">
+      <div class="tabs" role="tablist" data-critical>
+        <button type="button" role="tab" class="on" data-tab="login">로그인</button>
+        <button type="button" role="tab" data-tab="signup">회원가입</button>
+      </div>
+      <form id="fLogin" autocomplete="on">
+        <label class="field"><span>아이디 (이메일)</span><input class="in" name="id" type="email" autocomplete="username" required data-critical></label>
+        <label class="field"><span>비밀번호</span><input class="in" name="pw" type="password" autocomplete="current-password" required data-critical></label>
+        <button class="btn primary" data-critical>로그인</button>
+      </form>
+      <form id="fSignup" hidden>
+        <label class="field"><span>이름 (촬영장에서 보일 닉네임)</span><input class="in" name="name" maxlength="12" required data-critical></label>
+        <label class="field"><span>아이디 (이메일)</span><input class="in" name="id" type="email" autocomplete="username" required data-critical></label>
+        <label class="field"><span>비밀번호 (6자 이상)</span><input class="in" name="pw" type="password" minlength="6" autocomplete="new-password" required data-critical></label>
+        <label class="field"><span>비밀번호 확인</span><input class="in" name="pw2" type="password" minlength="6" autocomplete="new-password" required data-critical></label>
+        <button class="btn primary" data-critical>가입하고 시작하기</button>
+      </form>
+      <p class="err" id="authErr" role="alert"></p>
+    </div>
+    <p class="fine">계정은 이 기기의 브라우저에만 저장되고, 비밀번호는 PBKDF2로 해시됩니다.<br>카메라 사용을 위해 HTTPS 주소에서 열어 주세요.</p>
+  </div>
+</section>
+
+<!-- ───────── 로비 ───────── -->
+<section class="screen page" data-screen="lobby" hidden>
+  <div class="wrap">
+    <header class="lobby-head">
+      <div>안녕하세요, <b id="hello"></b>님 👋</div>
+      <div><button class="link" id="btnHelp">도움말</button><button class="link" id="btnLogout">로그아웃</button></div>
+    </header>
+    <div class="card">
+      <span class="lbl">내 카메라</span>
+      <div class="seg" id="facingSeg" data-critical>
+        <button type="button" data-f="user">🤳 전면 (인물)</button>
+        <button type="button" data-f="environment">🏞 후면 (풍경)</button>
+      </div>
+    </div>
+    <div class="card" id="createCard">
+      <h2>새 촬영 그룹 만들기</h2>
+      <p class="sub">만든 사람이 첫 <b>감독(메인 카메라)</b>이 돼요. 그룹은 촬영 동안만 존재하고, 끝나면 해체돼요.</p>
+      <span class="lbl">참여 카메라 수</span>
+      <div class="chips" id="capChips" data-critical></div>
+      <button class="btn primary" id="btnCreate" data-critical>그룹 만들고 감독 되기</button>
+    </div>
+    <div class="card" id="joinCard">
+      <h2>스태프로 참여하기</h2>
+      <p class="sub">감독에게 받은 6자리 코드를 입력하세요. 초대 링크로 열었다면 자동으로 채워져요.</p>
+      <input class="in code-in" id="joinCode" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters" spellcheck="false" data-critical>
+      <button class="btn" id="btnJoin" data-critical>참여하기</button>
+    </div>
+    <button class="btn" id="btnLobbyGal" hidden>🎞 이번에 찍은 작품 보기</button>
+    <p class="err" id="lobbyErr" role="alert"></p>
+  </div>
+</section>
+
+<!-- ───────── 스튜디오 ───────── -->
+<section class="screen" data-screen="studio" hidden>
+  <header class="topbar" data-critical>
+    <button class="chip code" id="chipCode" title="초대 링크 공유"></button>
+    <span class="chip" id="chipCount"></span>
+    <span class="chip" id="chipRole"></span>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="btnMenu" aria-label="메뉴" aria-haspopup="true"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button>
+  </header>
+
+  <!-- 감독 대시보드 -->
+  <div class="view" id="dirView" hidden>
+    <div class="monitor" id="monitor">
+      <div class="pgm-wrap" id="pgmWrap" data-soft>
+        <canvas id="pgm" width="720" height="1280" aria-label="최종 송출 화면"></canvas>
+        <div class="badges"><span class="badge pgm">PGM</span><span class="badge fx" id="modeBadge">CUT</span><span class="badge rec" id="recBadge" hidden>● REC <span id="recTime">00:00</span></span></div>
+        <div class="flash" id="flash"></div>
+      </div>
+    </div>
+    <div class="adjust" id="adjust" hidden data-critical>
+      <div class="ctl fx-only"><label for="fxDist">인물 거리</label><input type="range" id="fxDist" min="0" max="1" step="0.01"><output id="oDist"></output></div>
+      <div class="ctl"><label for="fxZoom">배경 화각</label><input type="range" id="fxZoom" min="1" max="2.5" step="0.01"><output id="oZoom"></output></div>
+      <div class="ctl fx-only"><label for="fxPar">원근 연동</label><input type="range" id="fxPar" min="-1" max="1" step="0.05"><output id="oPar"></output></div>
+      <div class="ctl fx-only"><label for="fxBlur">배경 심도</label><input type="range" id="fxBlur" min="0" max="1" step="0.05"><output id="oBlur"></output></div>
+      <div class="ctl-btns">
+        <button id="btnRecenter">↺ 기준 자세 재설정</button>
+        <button id="btnCenter">인물 가운데로</button>
+        <button id="btnAspect">화면비 9:16</button>
+      </div>
+      <p class="sensor" id="sensorInfo"></p>
+    </div>
+    <div class="tiles" id="tiles" data-critical aria-label="카메라 목록"></div>
+    <nav class="dock" id="dirDock" data-critical>
+      <button class="dbtn" id="btnFusion" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg><span>융합</span></button>
+      <button class="dbtn" id="btnAdjust"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>조정</span></button>
+      <button class="shutter" id="btnShot" aria-label="사진 촬영"></button>
+      <button class="recbtn" id="btnRec" aria-label="영상 녹화 시작"></button>
+      <button class="dbtn" id="btnGallery"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="15.5" cy="8.5" r="1.5"/></svg><span>작품 <b id="galN"></b></span></button>
+    </nav>
+  </div>
+
+  <!-- 스태프 카메라 -->
+  <div class="view staff" id="staffView" hidden>
+    <video id="selfVideo" autoplay muted playsinline></video>
+    <div class="tframe" id="tframe"></div>
+    <div class="tally" id="tally" data-critical>STANDBY</div>
+    <button class="pip" id="pip" data-critical aria-label="감독 화면 크게 보기"><video id="pipVideo" autoplay muted playsinline></video><span>감독 화면</span></button>
+    <div class="staff-msg" id="staffMsg" hidden></div>
+    <nav class="sdock" id="staffDock" data-critical>
+      <button class="round" id="btnFlip" aria-label="전면/후면 카메라 전환"><svg class="i" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></button>
+      <div class="zoomctl" id="zoomCtl" hidden><span>줌</span><input type="range" id="zoomIn"><output id="zoomOut"></output></div>
+      <span class="spacer"></span>
+      <button class="pill" id="btnAskDir">🎬 감독 요청</button>
+    </nav>
+  </div>
+</section>
+
+<!-- 메뉴 -->
+<div class="menu" id="menu" hidden role="menu">
+  <button id="mShare" role="menuitem">초대 링크 공유</button>
+  <button id="mHelp" role="menuitem">사용법 다시 보기</button>
+  <button id="mBot" role="menuitem">가이드 로봇 숨기기</button>
+  <button id="mLeave" role="menuitem" class="danger">그룹에서 나가기</button>
+</div>
+
+<!-- 카메라 지휘 시트 -->
+<div class="sheetwrap" id="camSheet" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-labelledby="csTitle">
+    <div class="grab"></div>
+    <h3 id="csTitle"></h3>
+    <p class="sub" id="csSub"></p>
+    <div class="grid2">
+      <button class="act" id="csAir"></button>
+      <button class="act" id="csSubj"></button>
+      <button class="act" id="csBench"></button>
+      <button class="act" id="csFlip">⟲ 전·후면 전환</button>
+    </div>
+    <div class="ctl" id="csZoomRow"><label for="csZoom">원격 줌</label><input type="range" id="csZoom"><output id="csZoomOut"></output></div>
+    <button class="baton" id="csBaton"></button>
+  </div>
+</div>
+
+<!-- 작품 갤러리 -->
+<div class="sheetwrap" id="galSheet" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-label="작품 갤러리">
+    <div class="grab"></div>
+    <h3>작품 갤러리</h3>
+    <p class="sub" id="galEmpty">아직 찍은 작품이 없어요. ◯ 사진, ● 영상 버튼으로 촬영하세요.</p>
+    <p class="sub">이 화면을 닫거나 새로고침하면 사라지니, 마음에 드는 작품은 저장해 두세요.</p>
+    <div class="gal" id="galGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<!-- 설명 로봇 -->
+<button id="bot" aria-label="도움말 로봇 찰칵이 (끌어서 옮길 수 있어요)">
+  <svg viewBox="0 0 64 64" aria-hidden="true">
+    <line x1="32" y1="5" x2="32" y2="13" stroke="#cfd6df" stroke-width="3" stroke-linecap="round"/>
+    <circle class="led" cx="32" cy="6" r="4" fill="#5ad1c8"/>
+    <rect x="5" y="25" width="5" height="11" rx="2.5" fill="#cfd6df"/>
+    <rect x="54" y="25" width="5" height="11" rx="2.5" fill="#cfd6df"/>
+    <rect x="9" y="12" width="46" height="36" rx="13" fill="#e9edf2"/>
+    <rect x="14" y="18" width="36" height="22" rx="9" fill="#1b2027"/>
+    <ellipse class="eye" cx="24.5" cy="28" rx="3.6" ry="4.4" fill="#ffb547"/>
+    <ellipse class="eye" cx="39.5" cy="28" rx="3.6" ry="4.4" fill="#ffb547"/>
+    <path d="M27 34.5q5 3 10 0" stroke="#ffb547" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <rect x="18" y="49" width="28" height="12" rx="6" fill="#e9edf2"/>
+    <circle cx="32" cy="55" r="3.6" fill="#1b2027"/><circle cx="32" cy="55" r="1.6" fill="#5ad1c8"/>
+  </svg>
+</button>
+<div id="bubble" role="status" aria-live="polite" hidden>
+  <i id="bTail"></i>
+  <div id="bText"></div>
+  <div class="b-row" id="bNav"><span id="bStep"></span><button id="bPrev">이전</button><button id="bNext" class="b-pri">다음</button><button id="bClose" aria-label="닫기">✕</button></div>
+  <div class="b-row" id="bActs" hidden></div>
+</div>
+<div id="spot" hidden></div>
+
+<script type="module">
+// ═════════ 설정 ═════════
+const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const SEG_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+const ID_PREFIX = 'fusioncam-v1-';
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const RELAYABLE = new Set(['state', 'tele', 'cmd', 'askdir', 'me']);   // 멤버가 보낼 수 있는 메시지 (해체·명단 등은 방장만)
+
+// ═════════ 유틸 ═════════
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a = -1, b = 1) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v) } catch { return d } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} },
+};
+function throttle(fn, ms) {
+  let last = 0, timer = 0, args;
+  return (...a) => {
+    args = a;
+    const wait = ms - (Date.now() - last);
+    if (wait <= 0) { clearTimeout(timer); timer = 0; last = Date.now(); fn(...args) }
+    else if (!timer) timer = setTimeout(() => { timer = 0; last = Date.now(); fn(...args) }, wait);
+  };
+}
+let toastT = 0;
+function toast(msg, ms = 2600) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  t.style.animation = 'none'; t.offsetWidth; t.style.animation = '';
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms);
+}
+
+// ═════════ 전역 상태 ═════════
+const S = {
+  user: null, facing: store.get('fc.facing', 'user'), cap: 4, screen: '',
+  peer: null, me: null, isHost: false, hostId: null, hostConn: null, conns: new Map(), code: '',
+  roster: [], st: null, wasDir: null,
+  local: null, call: null, callLive: false, remote: new Map(), vids: new Map(),
+  tele: new Map(), myTele: null, myTeleAt: 0, base: null,
+  pgm: null, pctx: null, pgmStream: null, raf: 0,
+  rec: null, mic: null, recTimer: 0, works: [], wl: null, pendingJoin: null, sheetId: null,
+};
+const amDir = () => !!S.st && S.st.directorId === S.me;
+const member = id => S.roster.find(m => m.id === id);
+const defaultState = dir => ({ directorId: dir, mode: 'cut', onAir: dir, subject: null, bench: [], aspect: '9:16', fx: { dist: .4, x: .5, y: 1, zoom: 1, par: .6, blur: .25 } });
+
+// ═════════ 회원가입 · 로그인 (기기 로컬) ═════════
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function pbkdf2(pw, salt) {
+  if (!crypto.subtle) throw new Error('보안 연결(HTTPS)에서만 로그인할 수 있어요.');
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  return b64(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, key, 256));
+}
+async function signup(id, name, pw) {
+  const users = store.get('fc.users', {});
+  if (users[id]) throw new Error('이미 가입된 아이디예요. 로그인해 주세요.');
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  users[id] = { name, salt: b64(salt), hash: await pbkdf2(pw, salt), created: Date.now() };
+  store.set('fc.users', users);
+}
+async function login(id, pw) {
+  const u = store.get('fc.users', {})[id];
+  if (!u || await pbkdf2(pw, unb64(u.salt)) !== u.hash) throw new Error('아이디 또는 비밀번호가 맞지 않아요.');
+  S.user = { id, name: u.name };
+  store.set('fc.session', S.user);
+}
+
+$$('.tabs button').forEach(b => b.onclick = () => {
+  $$('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('#fLogin').hidden = b.dataset.tab !== 'login';
+  $('#fSignup').hidden = b.dataset.tab !== 'signup';
+  $('#authErr').textContent = '';
+  Bot.place();
+});
+$('#fLogin').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  try { await login(f.id.value.trim().toLowerCase(), f.pw.value); f.reset(); show('lobby') }
+  catch (err) { $('#authErr').textContent = err.message }
+};
+$('#fSignup').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, id = f.id.value.trim().toLowerCase(), name = f.name.value.trim();
+  try {
+    if (!name) throw new Error('이름을 입력해 주세요.');
+    if (f.pw.value.length < 6) throw new Error('비밀번호는 6자 이상이에요.');
+    if (f.pw.value !== f.pw2.value) throw new Error('비밀번호 확인이 일치하지 않아요.');
+    await signup(id, name, f.pw.value);
+    await login(id, f.pw.value);
+    f.reset(); show('lobby'); toast(`${name}님, 환영해요!`);
+  } catch (err) { $('#authErr').textContent = err.message }
+};
+
+// ═════════ 화면 전환 ═════════
+function show(name) {
+  for (const s of $$('.screen')) s.hidden = s.dataset.screen !== name;
+  S.screen = name;
+  if (name === 'lobby') renderLobby();
+  Bot.context(name === 'studio' ? (amDir() ? 'director' : 'staff') : name);
+}
+
+// ═════════ 로비 ═════════
+function renderLobby() {
+  $('#hello').textContent = S.user.name;
+  $$('#facingSeg button').forEach(b => b.classList.toggle('on', b.dataset.f === S.facing));
+  $$('#capChips button').forEach(b => b.classList.toggle('on', +b.dataset.n === S.cap));
+  $('#btnLobbyGal').hidden = !S.works.length;
+}
+for (let n = 2; n <= 10; n++) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.n = n; b.textContent = n + '대';
+  b.onclick = () => { S.cap = n; renderLobby() };
+  $('#capChips').append(b);
+}
+$$('#facingSeg button').forEach(b => b.onclick = () => { S.facing = b.dataset.f; store.set('fc.facing', S.facing); renderLobby() });
+$('#joinCode').oninput = e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+$('#btnLogout').onclick = () => { S.user = null; localStorage.removeItem('fc.session'); show('auth') };
+$('#btnHelp').onclick = () => Bot.tour();
+$('#btnLobbyGal').onclick = openGallery;
+$('#btnCreate').onclick = () => startGroup(true);
+$('#btnJoin').onclick = () => startGroup(false);
+$('#joinCode').onkeydown = e => { if (e.key === 'Enter') startGroup(false) };
+
+// ═════════ 카메라 · 센서 ═════════
+async function getCam(facing) {
+  const base = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
+  const tries = [{ ...base, facingMode: { exact: facing }, zoom: true }, { ...base, facingMode: { ideal: facing } }];
+  let s, last;
+  for (const video of tries) {
+    try { s = await navigator.mediaDevices.getUserMedia({ video, audio: false }); break }
+    catch (e) { last = e; if (e.name === 'NotAllowedError') break }
+  }
+  if (!s) throw last;
+  const t = s.getVideoTracks()[0];
+  if ('contentHint' in t) t.contentHint = 'motion';
+  return s;
+}
+function zoomCaps() {
+  const t = S.local?.getVideoTracks()[0], c = t?.getCapabilities?.();
+  if (!c?.zoom || !(c.zoom.max > c.zoom.min)) return null;
+  return { min: c.zoom.min, max: c.zoom.max, step: c.zoom.step || .1, cur: t.getSettings().zoom ?? c.zoom.min };
+}
+async function applyZoom(v) {
+  try { await S.local?.getVideoTracks()[0].applyConstraints({ advanced: [{ zoom: v }] }); sendMeT() } catch {}
+  if (!amDir()) renderStaff();
+}
+let flipping = false;
+async function switchFacing() {
+  if (flipping || !S.local) return;
+  flipping = true;
+  const next = S.facing === 'user' ? 'environment' : 'user', oldId = S.local.getVideoTracks()[0]?.getSettings().deviceId;
+  S.local.getVideoTracks().forEach(t => t.stop());   // 많은 폰은 카메라 2개를 동시에 못 연다
+  try {
+    try { S.local = await getCam(next) } catch { S.local = await getCam(S.facing) }
+    const got = S.local.getVideoTracks()[0].getSettings();
+    if (got.facingMode ? got.facingMode === next : got.deviceId !== oldId) S.facing = next;   // 같은 카메라가 다시 열렸으면 방향 유지
+    else toast('이 기기는 카메라 전환을 지원하지 않아요');
+    const sender = S.call?.peerConnection?.getSenders().find(x => x.track?.kind === 'video');
+    await sender?.replaceTrack(S.local.getVideoTracks()[0]);
+    S.base = null; sendMe(); renderAll();
+  } catch (e) { toast('카메라를 다시 열지 못했어요: ' + e.message) }
+  finally { flipping = false }
+}
+
+// 카메라 광축(전면=화면 법선)의 방위각·고도. 세로로 들고 셀카를 찍어도 짐벌락이 없다.
+function camAngles(a, b, g, facing) {
+  const r = Math.PI / 180, cX = Math.cos(b * r), cY = Math.cos(g * r), cZ = Math.cos(a * r), sX = Math.sin(b * r), sY = Math.sin(g * r), sZ = Math.sin(a * r);
+  const k = facing === 'user' ? 1 : -1;
+  const x = k * (cY * sZ * sX + cZ * sY), y = k * (sZ * sY - cZ * cY * sX), z = k * cX * cY;
+  return { y: Math.atan2(x, y) / r, p: Math.asin(clamp(z)) / r };
+}
+function onOrient(e) {
+  if (e.alpha == null || e.beta == null || e.gamma == null) return;
+  S.myTele = camAngles(e.alpha, e.beta, e.gamma, S.facing);
+  S.myTeleAt = performance.now();
+  sendTele();
+}
+const sendTele = throttle(() => {
+  const st = S.st;
+  if (st && st.mode === 'fusion' && st.subject === S.me && !amDir()) send({ t: 'tele', o: S.myTele }, st.directorId);
+}, 33);
+let orientOn = false;
+function askMotion() {   // iOS는 사용자 제스처 안에서 권한을 요청해야 한다
+  if (orientOn) return;
+  const R = globalThis.DeviceOrientationEvent?.requestPermission;
+  const go = () => { if (!orientOn) { orientOn = true; addEventListener('deviceorientation', onOrient) } };
+  if (R) R.call(DeviceOrientationEvent).then(s => s === 'granted' && go()).catch(() => {});
+  else go();
+}
+
+async function wake() { try { S.wl = await navigator.wakeLock?.request('screen') } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.peer) wake() });
+
+// ═════════ 그룹 (PeerJS · WebRTC) ═════════
+function peerOpts() {
+  const s = new URLSearchParams(location.search).get('signal');   // 자체 PeerServer: ?signal=https://host:port/path
+  if (!s) return { debug: 1 };
+  const u = new URL(s);
+  return { host: u.hostname, port: +(u.port || (u.protocol === 'https:' ? 443 : 80)), path: u.pathname, secure: u.protocol === 'https:', debug: 1 };
+}
+function makePeer(id) {
+  return new Promise((res, rej) => {
+    const p = id ? new Peer(id, peerOpts()) : new Peer(peerOpts());
+    const t = setTimeout(() => { p.destroy(); rej(new Error('시그널 서버 응답이 없어요. 네트워크를 확인해 주세요.')) }, 15000);
+    const fail = e => { clearTimeout(t); p.destroy(); rej(e) };
+    p.once('error', fail);
+    p.once('open', () => { clearTimeout(t); p.off('error', fail); res(p) });
+  });
+}
+const genCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), n => CODE_ABC[n % CODE_ABC.length]).join('');
+
+let starting = false;
+async function startGroup(host) {
+  if (starting) return;
+  const err = $('#lobbyErr'), code = $('#joinCode').value.trim().toUpperCase();
+  err.textContent = '';
+  if (!host && code.length !== 6) { err.textContent = '코드 6자리를 입력해 주세요.'; $('#joinCode').focus(); return }
+  if (typeof Peer === 'undefined') { err.textContent = '통신 모듈(PeerJS)을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'; return }
+  if (!navigator.mediaDevices?.getUserMedia) { err.textContent = '이 브라우저(또는 HTTP 주소)에서는 카메라를 쓸 수 없어요. HTTPS로 열어 주세요.'; return }
+  starting = true;
+  askMotion();
+  const btn = host ? $('#btnCreate') : $('#btnJoin'), label = btn.textContent;
+  btn.disabled = true; btn.textContent = '카메라 · 연결 준비 중…';
+  try {
+    S.local = await getCam(S.facing);
+    const fm = S.local.getVideoTracks()[0].getSettings().facingMode;
+    if (fm === 'user' || fm === 'environment') S.facing = fm;
+    if (host) {
+      for (let i = 0; i < 4 && !S.peer; i++) {
+        const c = genCode();
+        try { S.peer = await makePeer(ID_PREFIX + c); S.code = c }
+        catch (e) { if (e.type !== 'unavailable-id') throw e }
+      }
+      if (!S.peer) throw new Error('그룹 코드를 만들지 못했어요. 다시 시도해 주세요.');
+      S.isHost = true; S.me = S.hostId = S.peer.id;
+      S.roster = [{ id: S.me, name: S.user.name, cam: 1, facing: S.facing, zoom: zoomCaps() }];
+      S.st = defaultState(S.me);
+      wirePeer();
+    } else {
+      S.peer = await makePeer();
+      S.isHost = false; S.me = S.peer.id; S.code = code; S.hostId = ID_PREFIX + code;
+      wirePeer();
+      await joinHost();
+    }
+    enterStudio();
+  } catch (e) {
+    console.warn(e);
+    err.textContent = e.name === 'NotAllowedError' ? '카메라 권한이 필요해요. 브라우저 설정에서 허용해 주세요.'
+      : e.type === 'peer-unavailable' ? '그룹을 찾을 수 없어요. 코드를 확인해 주세요.'
+      : (e.message || '연결에 실패했어요.');
+    teardown();
+  } finally { starting = false; btn.disabled = false; btn.textContent = label }
+}
+function joinHost() {
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error('그룹을 찾을 수 없어요. 코드를 확인해 주세요.')), 20000);   // 모바일망 TURN 중계 여유
+    S.pendingJoin = { res: () => { clearTimeout(t); S.pendingJoin = null; res() }, rej: e => { clearTimeout(t); S.pendingJoin = null; rej(e) } };
+    const c = S.hostConn = S.peer.connect(S.hostId, { reliable: true, serialization: 'json' });
+    c.on('open', () => c.send({ t: 'hello', name: S.user.name, facing: S.facing, zoom: zoomCaps() }));
+    c.on('data', onMsg);
+    const lost = () => { if (S.pendingJoin) S.pendingJoin.rej(new Error('그룹 연결이 끊어졌어요.')); else if (S.peer && S.hostConn === c) leave('그룹이 해체되었거나 연결이 끊어졌어요.') };
+    c.on('close', lost); c.on('error', lost);
+  });
+}
+function wirePeer() {
+  const p = S.peer;
+  p.on('connection', onIncomingConn);
+  p.on('call', onIncomingCall);
+  p.on('disconnected', () => setTimeout(() => { if (S.peer === p && p.disconnected && !p.destroyed) p.reconnect() }, 1000));
+  p.on('error', e => {
+    if (e.type === 'peer-unavailable' && S.pendingJoin) S.pendingJoin.rej(e);
+    else console.warn('peer:', e.type, e.message);
+  });
+}
+
+// 메시지: 멤버 ↔ 방장(허브) 별 모양. 방장이 중계한다.
+function send(m, to) {
+  m.from = S.me;
+  if (S.isHost) hostDeliver(m, to);
+  else if (S.hostConn?.open) S.hostConn.send({ t: 'relay', to, msg: m });
+}
+function hostDeliver(m, to) {
+  if (to === '*') {
+    for (const [id, c] of S.conns) if (id !== m.from && c.open) c.send(m);
+    if (m.from !== S.me) onMsg(m);
+  } else if (to === S.me) onMsg(m);
+  else { const c = S.conns.get(to); if (c?.open) c.send(m) }
+}
+function onIncomingConn(conn) {
+  if (!S.isHost) { conn.on('open', () => conn.close()); return }
+  conn.on('data', d => {
+    if (d.t === 'hello') return hostAdmit(conn, d);
+    // 승인된 멤버의 허용된 메시지만, 보낸 사람은 연결로 확정해서 중계 (사칭·위조 방지)
+    if (S.conns.has(conn.peer) && d.t === 'relay' && RELAYABLE.has(d.msg?.t)) hostDeliver({ ...d.msg, from: conn.peer }, d.to);
+  });
+  const drop = () => hostDrop(conn.peer);
+  conn.on('close', drop); conn.on('error', drop);
+}
+function hostAdmit(conn, d) {
+  if (S.roster.length >= S.cap) { conn.send({ t: 'full' }); setTimeout(() => conn.close(), 500); return }
+  S.conns.set(conn.peer, conn);
+  const used = new Set(S.roster.map(m => m.cam));
+  let cam = 1; while (used.has(cam)) cam++;
+  const name = String(d.name || '스태프').slice(0, 12);
+  S.roster.push({ id: conn.peer, name, cam, facing: d.facing === 'environment' ? 'environment' : 'user', zoom: d.zoom || null });
+  conn.send({ t: 'welcome', cap: S.cap, roster: S.roster, st: S.st });
+  broadcastRoster();
+  toast(`CAM${cam} · ${name}님이 참여했어요`);
+}
+function hostDrop(id) {
+  if (!S.conns.delete(id)) return;
+  const m = member(id);
+  S.roster = S.roster.filter(x => x.id !== id);
+  broadcastRoster();
+  const st = S.st, p = {};
+  if (st.directorId === id) p.directorId = S.me;
+  if (st.onAir === id) p.onAir = null;
+  if (st.subject === id) { p.subject = null; p.mode = 'cut' }
+  if (st.bench.includes(id)) p.bench = st.bench.filter(x => x !== id);
+  if (Object.keys(p).length) setState(p, true);
+  if (m) toast(`CAM${m.cam} · ${m.name}님이 나갔어요`);
+}
+function broadcastRoster() { send({ t: 'roster', roster: S.roster }, '*'); onRoster() }
+
+function onMsg(m) {
+  switch (m.t) {
+    case 'welcome': S.cap = m.cap; S.roster = m.roster; S.st = m.st; S.pendingJoin?.res(); break;
+    case 'full': S.pendingJoin?.rej(new Error('그룹 인원이 가득 찼어요. 감독에게 인원을 늘려 달라고 하세요.')); break;
+    case 'roster': S.roster = m.roster; onRoster(); break;
+    case 'state':
+      if (S.st && m.from !== S.st.directorId && m.from !== S.hostId) return;
+      S.st = m.st; applyState(); break;
+    case 'tele': S.tele.set(m.from, { o: m.o, at: performance.now() }); break;
+    case 'cmd':
+      if (m.from !== S.st?.directorId) return;
+      if (m.op === 'facing') switchFacing(); else if (m.op === 'zoom') applyZoom(+m.v);
+      break;
+    case 'me':
+      if (S.isHost) { const e = member(m.from); if (e) { e.facing = m.facing; e.zoom = m.zoom; broadcastRoster() } }
+      break;
+    case 'askdir': {
+      if (!amDir()) return;
+      const r = member(m.from); if (!r) return;
+      Bot.ask(`CAM${r.cam} · <b>${esc(r.name)}</b>님이 <b>감독 권한</b>을 요청했어요.`, [
+        { label: '넘기기', primary: true, fn: () => member(r.id) && setState({ directorId: r.id }) },
+        { label: '나중에' },
+      ]);
+      break;
+    }
+    case 'disband': leave('방장이 그룹을 해체했어요. 수고하셨어요!'); break;
+  }
+}
+function sendMe() {
+  const z = zoomCaps();
+  if (S.isHost) { const e = member(S.me); if (e) { e.facing = S.facing; e.zoom = z; broadcastRoster() } }
+  else send({ t: 'me', facing: S.facing, zoom: z }, S.hostId);
+}
+const sendMeT = throttle(sendMe, 500);
+
+// ═════════ 공유 상태 (감독이 소유, 방장이 보관·중계) ═════════
+const pushState = throttle(() => send({ t: 'state', st: S.st }, '*'), 90);
+function setState(patch, force) {
+  if (!force && !amDir()) return;
+  S.st = { ...S.st, ...patch, fx: { ...S.st.fx, ...(patch.fx || {}) } };
+  applyState();
+  pushState();
+}
+const setFx = fx => setState({ fx });
+
+function applyState() {
+  if (!S.st || S.screen !== 'studio') return;
+  const d = amDir();
+  if (d !== S.wasDir) {
+    const first = S.wasDir === null;
+    S.wasDir = d;
+    $('#dirView').hidden = !d; $('#staffView').hidden = d;
+    if (!d) { closeSheets(); stopRec() }
+    if (!first) toast(d ? '🎬 감독 권한을 받았어요. 이제 이 폰이 메인 카메라예요' : '감독 권한을 넘겼어요. 스태프 카메라로 전환합니다', 3200);
+    Bot.context(d ? 'director' : 'staff');
+    if (d) requestAnimationFrame(fitCanvas);
+  }
+  setAspect(S.st.aspect);
+  if (S.base && S.base.id !== S.st.subject) S.base = null;
+  reconcileMedia();   // 송출 경로를 먼저 맞춘 뒤 그린다 (대기 전환 시 PiP 등 즉시 반영)
+  renderAll();
+  if (d) ensureSeg();   // 감독이 되면 미리 로드 → 융합 버튼을 누르는 순간 바로 인물 분리
+}
+function onRoster() {
+  for (const [id, r] of [...S.remote]) if (!member(id)) { try { r.call.close() } catch {} S.remote.delete(id) }
+  for (const id of [...S.tele.keys()]) if (!member(id)) S.tele.delete(id);
+  reconcileMedia();
+  renderAll();
+}
+
+// ═════════ 미디어 경로: 스태프 카메라 → 감독, 감독의 PGM → 스태프 ═════════
+function tune(pc, kind) {
+  if (!pc) return;
+  const enc = kind === 'cam' ? { maxBitrate: 2500000, maxFramerate: 30 } : { maxBitrate: 700000, maxFramerate: 24, scaleResolutionDownBy: 2 };
+  const apply = (s, pref) => {
+    const p = s.getParameters();
+    if (!p.encodings?.length) p.encodings = [{}];
+    Object.assign(p.encodings[0], enc);
+    if (pref) p.degradationPreference = pref;
+    return s.setParameters(p);
+  };
+  for (const s of pc.getSenders()) {
+    if (s.track?.kind !== 'video') continue;
+    apply(s, 'maintain-framerate').catch(() => apply(s)).catch(() => {});   // 느려지기보다 화질을 양보 (미지원이면 인코딩 설정만)
+  }
+  for (const r of pc.getReceivers()) {   // 지터 버퍼 최소화 → 지연 최소화
+    try { if ('jitterBufferTarget' in r) r.jitterBufferTarget = 0; else if ('playoutDelayHint' in r) r.playoutDelayHint = 0 } catch {}
+  }
+}
+function watchPC(call, end) {
+  const pc = call.peerConnection;
+  pc?.addEventListener('connectionstatechange', () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') { try { call.close() } catch {} end() } });
+}
+function reconcileMedia() {
+  if (!S.peer || S.peer.destroyed || !S.local) return;
+  const st = S.st;
+  const want = !amDir() && !st.bench.includes(S.me) && member(st.directorId) ? st.directorId : null;
+  if (S.call && S.call.peer !== want) { const c = S.call; S.call = null; S.callLive = false; try { c.close() } catch {} }
+  if (want && !S.call) {
+    const call = S.call = S.peer.call(want, S.local);
+    call.on('stream', s => {
+      if (S.call !== call) return;
+      S.callLive = true; $('#pipVideo').srcObject = s; tune(call.peerConnection, 'cam'); renderAll();
+    });
+    const end = () => { if (S.call === call) { S.call = null; S.callLive = false; renderAll(); setTimeout(reconcileMedia, 1500) } };
+    call.on('close', end); call.on('error', end);
+    watchPC(call, end);
+  }
+}
+function onIncomingCall(call) {
+  call.answer(S.pgmStream);
+  call.on('stream', s => {
+    const old = S.remote.get(call.peer);
+    if (old && old.call !== call) try { old.call.close() } catch {}
+    S.remote.set(call.peer, { call, stream: s });
+    tune(call.peerConnection, 'pgm');
+    renderAll();
+  });
+  const end = () => { const r = S.remote.get(call.peer); if (r?.call === call) { S.remote.delete(call.peer); renderAll() } };
+  call.on('close', end); call.on('error', end);
+  watchPC(call, end);
+}
+
+// ═════════ 스튜디오 진입 · 퇴장 ═════════
+function enterStudio() {
+  if (!S.pgm) {
+    S.pgm = $('#pgm'); S.pctx = S.pgm.getContext('2d', { alpha: false });
+    S.pctx.fillRect(0, 0, S.pgm.width, S.pgm.height);
+    S.pgmStream = S.pgm.captureStream(30);
+    const t = S.pgmStream.getVideoTracks()[0];
+    if (t && 'contentHint' in t) t.contentHint = 'motion';
+  }
+  S.wasDir = null;
+  show('studio');
+  applyState();
+  wake();
+  cancelAnimationFrame(S.raf);
+  S.raf = requestAnimationFrame(loop);
+}
+function teardown() {
+  stopRec();
+  try { S.call?.close() } catch {}
+  for (const r of S.remote.values()) try { r.call.close() } catch {}
+  const p = S.peer;
+  S.peer = null;
+  if (p) setTimeout(() => p.destroy(), S.isHost ? 400 : 0);
+  S.local?.getTracks().forEach(t => t.stop());
+  Object.assign(S, { local: null, call: null, callLive: false, hostConn: null, roster: [], st: null, isHost: false, base: null, pendingJoin: null, sheetId: null });
+  S.conns.clear(); S.remote.clear(); S.vids.clear(); S.tele.clear();
+  $('#tiles').innerHTML = '';
+  $('#pipVideo').srcObject = null; $('#selfVideo').srcObject = null;
+  cancelAnimationFrame(S.raf);
+  try { S.wl?.release() } catch {}
+  S.wl = null;
+}
+function leave(reason) {
+  if (!S.peer) return;
+  if (S.isHost) for (const c of S.conns.values()) try { c.open && c.send({ t: 'disband', from: S.me }) } catch {}
+  closeSheets(); $('#menu').hidden = true;
+  teardown();
+  show('lobby');
+  if (reason) toast(reason, 3200);
+}
+addEventListener('pagehide', () => leave());
+
+// ═════════ 인물 분리 (MediaPipe Selfie Segmenter) ═════════
+// 추론은 Web Worker에서: 모델이 느린 기기에서도 합성(메인 스레드)은 끊기지 않고, 마스크는 도착하는 대로 갈아 끼운다.
+// 느린 GPU(소프트웨어 WebGL 등)는 첫 프레임 이후 몇 장을 재 보고 CPU(WASM)로 바꾼다. 워커를 못 쓰면 메인 스레드로 돌린다.
+const SEG_WORKER = `
+let seg, make, delegate, cost = 0, n = 0;
+const oc = new OffscreenCanvas(256, 256), ox = oc.getContext('2d');
+onmessage = async ({ data: d }) => {
+  if (d.vision) {
+    try {
+      const { FilesetResolver, ImageSegmenter } = await import(d.vision + '/vision_bundle.mjs');
+      const files = await FilesetResolver.forVisionTasks(d.vision + '/wasm');
+      make = dg => ImageSegmenter.createFromOptions(files, { baseOptions: { modelAssetPath: d.model, delegate: dg }, runningMode: 'VIDEO', outputConfidenceMasks: true, outputCategoryMask: false });
+      try { seg = await make(delegate = 'GPU') } catch { seg = await make(delegate = 'CPU') }
+      postMessage({ ready: delegate });
+    } catch (e) { postMessage({ error: String(e) }) }
+    return;
+  }
+  try {
+    ox.drawImage(d.frame, 0, 0, 256, 256);   // 모델 입력 크기로 줄이기 (워커 안에서)
+    const t0 = performance.now(), r = seg.segmentForVideo(oc, d.ts), m = r.confidenceMasks[0];
+    const mask = m.getAsFloat32Array().slice(), w = m.width, h = m.height;
+    r.close();
+    postMessage({ mask, w, h }, [mask.buffer]);
+    const c = performance.now() - t0; n++;
+    if (n > 1) cost = n === 2 ? c : cost * .7 + c * .3;   // 첫 프레임은 워밍업이라 제외
+    if (delegate === 'GPU' && n > 1 && (c > 250 || (n >= 4 && cost > 40))) { delegate = 'CPU'; const old = seg; seg = await make('CPU'); old.close() }
+  } catch (e) { postMessage({ error: String(e) }) }
+  finally { d.frame.close() }
+};`;
+const SEG_IN = Object.assign(document.createElement('canvas'), { width: 256, height: 256 }), SEG_INX = SEG_IN.getContext('2d');
+const SEG = { st: 'idle', worker: null, busy: false, seg: null, delegate: '', make: null, cost: 0, n: 0, mask: null, mctx: null, img: null, prev: null, lastT: 0, lastVT: -1 };
+function ensureSeg() {
+  if (SEG.st !== 'idle') return;
+  SEG.st = 'loading';
+  let w;
+  try { w = new Worker(URL.createObjectURL(new Blob([SEG_WORKER], { type: 'text/javascript' }))) } catch { segOnMain(); return }
+  const bail = e => {
+    console.warn('seg worker', e);
+    w.terminate(); SEG.worker = null; SEG.busy = false;
+    segOnMain();
+  };
+  w.onerror = bail;
+  w.onmessage = ({ data: d }) => {
+    if (d.ready) { SEG.worker = w; SEG.st = 'ready' }
+    else if (d.mask) { SEG.busy = false; putMask(d.mask, d.w, d.h) }
+    else if (d.error) { if (!SEG.worker) return bail(d.error); console.warn('seg', d.error); SEG.busy = false }
+  };
+  w.postMessage({ vision: VISION, model: SEG_MODEL });
+}
+async function segOnMain() {
+  SEG.st = 'loading';
+  try {
+    const { FilesetResolver, ImageSegmenter } = await import(VISION + '/vision_bundle.mjs');
+    const files = await FilesetResolver.forVisionTasks(VISION + '/wasm');
+    SEG.make = delegate => ImageSegmenter.createFromOptions(files, {
+      baseOptions: { modelAssetPath: SEG_MODEL, delegate }, runningMode: 'VIDEO', outputConfidenceMasks: true, outputCategoryMask: false,
+    });
+    try { SEG.seg = await SEG.make('GPU'); SEG.delegate = 'GPU' } catch { SEG.seg = await SEG.make('CPU'); SEG.delegate = 'CPU' }
+    SEG.st = 'ready';
+  } catch (e) {
+    console.warn('segmenter', e);
+    SEG.st = 'failed';
+    toast('인물 분리 모델을 불러오지 못해 액자 모드로 합성해요');
+  }
+}
+function segment(v) {
+  if (v.currentTime === SEG.lastVT) return;   // 새 프레임일 때만 추론
+  const now = performance.now();
+  if (SEG.worker) {
+    if (SEG.busy) return;
+    SEG.busy = true; SEG.lastVT = v.currentTime;
+    const post = frame => SEG.worker ? SEG.worker.postMessage({ frame, ts: now }, [frame]) : (frame.close(), SEG.busy = false);
+    try { post(new VideoFrame(v)) }   // WebCodecs: 현재 프레임을 복사 없이 워커로 넘김
+    catch { createImageBitmap(v).then(post).catch(() => SEG.busy = false) }
+    return;
+  }
+  // 메인 스레드 폴백: 추론 비용의 1.5배 간격으로만 돌려 합성 시간을 남긴다
+  if (now - SEG.lastT < SEG.cost * 1.5) return;
+  SEG.lastVT = v.currentTime; SEG.lastT = now;
+  let r;
+  try {
+    SEG_INX.drawImage(v, 0, 0, 256, 256);
+    r = SEG.seg.segmentForVideo(SEG_IN, now);
+  } catch (e) { console.warn(e); SEG.st = 'failed'; return }
+  const cost = performance.now() - now;
+  SEG.cost = SEG.n++ ? SEG.cost * .7 + cost * .3 : cost;
+  if (SEG.delegate === 'GPU' && SEG.n > 1 && (cost > 250 || (SEG.n >= 4 && SEG.cost > 40))) {
+    SEG.delegate = 'CPU';
+    SEG.make('CPU').then(seg => { const old = SEG.seg; SEG.seg = seg; SEG.n = 0; old.close() }).catch(() => {});
+  }
+  const m = r.confidenceMasks?.[0];
+  if (m) putMask(m.getAsFloat32Array(), m.width, m.height);
+  r.close?.();
+}
+function putMask(d, w, h) {
+  if (!SEG.mask || SEG.mask.width !== w || SEG.mask.height !== h) {
+    SEG.mask = Object.assign(document.createElement('canvas'), { width: w, height: h });
+    SEG.mctx = SEG.mask.getContext('2d');
+    SEG.img = SEG.mctx.createImageData(w, h); SEG.img.data.fill(255);
+    SEG.prev = new Float32Array(w * h);
+  }
+  const px = SEG.img.data, prev = SEG.prev;
+  for (let i = 0; i < d.length; i++) {
+    const a = prev[i] * .35 + clamp((d[i] - .3) / .4, 0, 1) * .65;   // 가장자리 부드럽게 + 깜빡임 억제
+    prev[i] = a; px[i * 4 + 3] = a * 255;
+  }
+  SEG.mctx.putImageData(SEG.img, 0, 0);
+}
+
+// ═════════ PGM 합성 (감독 기기에서만) ═════════
+const P = { x: 0, y: 0 };
+const PC = document.createElement('canvas'), PX = PC.getContext('2d');
+const BG = document.createElement('canvas'), BGX = BG.getContext('2d');
+const ready = v => v && v.readyState >= 2 && v.videoWidth > 0;
+const wrap180 = a => ((a + 540) % 360) - 180;
+
+function loop(now) {
+  S.raf = requestAnimationFrame(loop);
+  if (!amDir() || S.screen !== 'studio' || now - (S.drawAt || 0) < 30) return;   // 카메라와 같은 ~30fps로 합성
+  S.drawAt = now;
+  drawProgram();
+  if (now - (S.uiAt || 0) > 500) { S.uiAt = now; sensorInfo(now) }
+}
+function drawProgram() {
+  const ctx = S.pctx, W = S.pgm.width, H = S.pgm.height, st = S.st, fx = st.fx;
+  const bg = S.vids.get(st.onAir);
+  const fusion = st.mode === 'fusion' && st.subject && st.subject !== st.onAir;
+  const sv = fusion ? S.vids.get(st.subject) : null;
+
+  // 원근 연동: 주인공 폰의 회전 → 배경 시차
+  let tx = 0, ty = 0;
+  const t = fusion ? (st.subject === S.me ? (S.myTele && { o: S.myTele }) : S.tele.get(st.subject)) : null;
+  if (t?.o) {
+    if (!S.base) S.base = { id: st.subject, ...t.o };
+    tx = clamp(wrap180(t.o.y - S.base.y) / 25);
+    ty = clamp((t.o.p - S.base.p) / 20);
+  }
+  P.x += (tx - P.x) * .2; P.y += (ty - P.y) * .2;
+
+  if (ready(bg)) {
+    const par = fusion ? fx.par : 0;
+    const zoom = fx.zoom * (1 + .25 * Math.abs(par)) * (fusion ? 1 + fx.blur * .06 : 1);
+    if (fusion && fx.blur > .01) {
+      // 흐린 배경엔 해상도가 필요 없다: 1/k 크기에서 흐린 뒤 늘려 그리면 GPU 비용이 k²배 준다 (filter 미지원 Safari도 축소만으로 부드러워짐)
+      const k = 2 + fx.blur * 4, bw = Math.round(W / k), bh = Math.round(H / k);
+      if (BG.width !== bw || BG.height !== bh) { BG.width = bw; BG.height = bh }
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);   // 흐린 가장자리의 반투명이 이전 프레임과 섞이지 않게
+      BGX.filter = `blur(${(fx.blur * 9 * Math.min(W, H) / 720 / k).toFixed(2)}px)`;
+      drawCover(BGX, bg, bw, bh, zoom, -P.x * par, P.y * par);
+      ctx.drawImage(BG, 0, 0, W, H);
+    } else drawCover(ctx, bg, W, H, zoom, -P.x * par, P.y * par);   // 폰이 오른쪽으로 돌면 실제 카메라처럼 배경은 왼쪽으로
+  } else standby(ctx, W, H, st.onAir ? '배경 카메라 연결 중…' : '카메라 타일을 눌러 ON AIR 하세요');
+
+  if (fusion && ready(sv)) drawSubject(ctx, sv, W, H, fx);
+}
+// PGM·사진·영상은 반전하지 않는다: 카메라 원본 프레임 = 남이 찍어준 본상. (거울상은 셀카 미리보기에만)
+function drawCover(ctx, v, W, H, zoom, ox, oy) {
+  const vw = v.videoWidth, vh = v.videoHeight, s = Math.max(W / vw, H / vh) * zoom, dw = vw * s, dh = vh * s;
+  ctx.drawImage(v, (W - dw) / 2 + clamp(ox) * (dw - W) / 2, (H - dh) / 2 + clamp(oy) * (dh - H) / 2, dw, dh);
+}
+function drawSubject(ctx, v, W, H, fx) {
+  const vw = v.videoWidth, vh = v.videoHeight;
+  if (SEG.st === 'ready') segment(v);
+  if (SEG.st === 'ready' && SEG.mask) {
+    const pw = Math.min(vw, 640), ph = Math.round(pw * vh / vw);
+    if (PC.width !== pw || PC.height !== ph) { PC.width = pw; PC.height = ph }
+    PX.globalCompositeOperation = 'copy'; PX.drawImage(v, 0, 0, pw, ph);
+    PX.globalCompositeOperation = 'destination-in'; PX.drawImage(SEG.mask, 0, 0, pw, ph);
+    PX.globalCompositeOperation = 'source-over';
+    const h = H * (1.15 - .85 * fx.dist), w = h * vw / vh;
+    ctx.drawImage(PC, fx.x * W - w / 2, fx.y * H - h, w, h);
+  } else {   // 모델 준비 전(첫 마스크 도착 전)/실패: 둥근 액자로 합성
+    const h = H * (1.15 - .85 * fx.dist) * .5, w = h * vw / vh, x = fx.x * W - w / 2, y = fx.y * H - h - H * .03, r = Math.min(w, h) * .08;
+    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.clip();
+    ctx.drawImage(v, x, y, w, h); ctx.restore();
+    ctx.lineWidth = Math.min(W, H) / 200; ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.stroke();
+  }
+}
+function standby(ctx, W, H, text) {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#161b24'); g.addColorStop(1, '#0a0c10');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#9aa4b0'; ctx.font = `600 ${Math.round(W / 24)}px system-ui, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, W / 2, H / 2);
+}
+function setAspect(a) {
+  const [w, h] = a === '16:9' ? [1280, 720] : [720, 1280];
+  if (S.pgm.width !== w || S.pgm.height !== h) { S.pgm.width = w; S.pgm.height = h; fitCanvas() }
+}
+function fitCanvas() {
+  const box = $('#monitor'), wrap = $('#pgmWrap');
+  if (!S.pgm || !box.clientWidth) return;
+  const bw = box.clientWidth - 20, bh = box.clientHeight - 10, ar = S.pgm.width / S.pgm.height;
+  let w = bw, h = w / ar;
+  if (h > bh) { h = bh; w = h * ar }
+  wrap.style.width = Math.max(0, Math.floor(w)) + 'px';
+  wrap.style.height = Math.max(0, Math.floor(h)) + 'px';
+}
+new ResizeObserver(() => { fitCanvas(); Bot.place() }).observe($('#monitor'));
+const modeBadge = () => $('#modeBadge').textContent = S.st.mode !== 'fusion' ? 'CUT' : SEG.st === 'failed' || (SEG.st === 'ready' && SEG.mask) ? 'FUSION' : 'FUSION · 인물 분리 준비 중';
+function sensorInfo(now) {
+  const st = S.st, el = $('#sensorInfo');
+  modeBadge();
+  if (st.mode !== 'fusion' || !st.subject) { el.textContent = '원근 연동은 융합 모드에서 주인공 폰의 자세 센서로 동작해요.'; return }
+  const at = st.subject === S.me ? S.myTeleAt : S.tele.get(st.subject)?.at;
+  el.textContent = '주인공 폰 자세 센서: ' + (at && now - at < 1500 ? '수신 중 ✓' : '신호 없음 (PC이거나 모션 권한이 꺼져 있어요)');
+}
+
+// 인물 직접 조작: 한 손가락 = 위치, 두 손가락/휠 = 거리
+const ptrs = new Map();
+let g0 = null;
+const centroid = pts => ({ x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length });
+const gap = pts => Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+function gStart() {
+  const pts = [...ptrs.values()];
+  g0 = pts.length ? { c: centroid(pts), d: pts.length > 1 ? gap(pts) : 0, fx: { ...S.st.fx }, r: S.pgm.getBoundingClientRect() } : null;
+}
+const pgmEl = $('#pgm');
+pgmEl.addEventListener('pointerdown', e => {
+  if (!amDir() || S.st.mode !== 'fusion') return;
+  pgmEl.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); gStart();
+});
+pgmEl.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId) || !g0) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const pts = [...ptrs.values()], c = centroid(pts);
+  const p = { x: clamp(g0.fx.x + (c.x - g0.c.x) / g0.r.width, -.2, 1.2), y: clamp(g0.fx.y + (c.y - g0.c.y) / g0.r.height, .3, 1.6) };
+  if (pts.length > 1 && g0.d) p.dist = clamp(g0.fx.dist - Math.log(gap(pts) / g0.d) * .8, 0, 1);
+  setFx(p);
+});
+for (const t of ['pointerup', 'pointercancel']) pgmEl.addEventListener(t, e => { ptrs.delete(e.pointerId); gStart() });
+pgmEl.addEventListener('wheel', e => {
+  if (!amDir() || S.st.mode !== 'fusion') return;
+  e.preventDefault(); setFx({ dist: clamp(S.st.fx.dist + e.deltaY * .001, 0, 1) });
+}, { passive: false });
+
+// ═════════ 렌더링 (UI) ═════════
+function renderAll() {
+  if (!S.st || S.screen !== 'studio') return;
+  renderTop();
+  if (amDir()) { renderTiles(); renderCtl(); if (S.sheetId) renderCamSheet() }
+  else renderStaff();
+  Bot.placeSoon();   // 배지·타일 크기가 바뀌면 로봇·말풍선·강조 링도 다시 자리 잡기 (프레임당 1회)
+}
+function renderTop() {
+  const me = member(S.me), dir = member(S.st.directorId), d = amDir();
+  $('#chipCode').textContent = '코드 ' + S.code;
+  $('#chipCount').textContent = `👥 ${S.roster.length}/${S.cap}`;
+  const rc = $('#chipRole');
+  rc.textContent = d ? `🎬 감독 · CAM${me?.cam ?? '-'}` : `CAM${me?.cam ?? '-'} · 감독 ${dir?.name ?? '…'}`;
+  rc.classList.toggle('dir', d);
+  $('#mLeave').textContent = S.isHost ? '그룹 해체하고 나가기' : '그룹에서 나가기';
+  $('#mBot').textContent = Bot.off ? '가이드 로봇 보이기' : '가이드 로봇 숨기기';
+}
+function renderTiles() {
+  const box = $('#tiles'), st = S.st, seen = new Set();
+  [...S.roster].sort((a, b) => a.cam - b.cam).forEach((m, i) => {
+    seen.add(m.id);
+    let t = $$('.tile', box).find(x => x.dataset.id === m.id);
+    if (!t) {
+      t = document.createElement('button');
+      t.className = 'tile'; t.dataset.id = m.id;
+      t.innerHTML = '<video autoplay muted playsinline></video><span class="wait"></span><span class="tag"></span><span class="lab"></span>';
+      t.onclick = () => openCamSheet(m.id);
+    }
+    if (box.children[i] !== t) box.insertBefore(t, box.children[i] || null);
+    const v = t.querySelector('video'), stream = m.id === S.me ? S.local : S.remote.get(m.id)?.stream || null;
+    if (v.srcObject !== stream) { v.srcObject = stream; stream && v.play().catch(() => {}) }
+    S.vids.set(m.id, v);
+    const air = st.onAir === m.id, subj = st.mode === 'fusion' && st.subject === m.id, bench = st.bench.includes(m.id);
+    t.classList.toggle('onair', air); t.classList.toggle('subj', subj); t.classList.toggle('bench', bench);
+    v.classList.toggle('mirror', m.id === S.me && S.facing === 'user');   // 내 셀카 미리보기만 거울처럼
+    const w = t.querySelector('.wait'); w.hidden = !!stream; w.textContent = bench ? '대기' : '연결 중…';
+    const tag = t.querySelector('.tag'); tag.hidden = !(air || subj); tag.textContent = subj ? '주인공' : st.mode === 'fusion' ? '배경' : 'ON AIR';
+    t.querySelector('.lab').innerHTML = `CAM${m.cam}${m.id === S.me ? ' · 나' : ''}<small>${esc(m.name)}</small>`;
+    t.setAttribute('aria-label', `CAM${m.cam} ${m.name}${air ? ', 송출 중' : ''}${subj ? ', 주인공' : ''}`);
+  });
+  for (const t of [...box.children]) if (!seen.has(t.dataset.id)) { S.vids.delete(t.dataset.id); t.remove() }
+}
+function syncRange(id, v) { const e = $(id); if (document.activeElement !== e) e.value = v }
+function renderCtl() {
+  const st = S.st, fx = st.fx, fusion = st.mode === 'fusion';
+  $('#btnFusion').classList.toggle('on', fusion); $('#btnFusion').setAttribute('aria-pressed', fusion);
+  modeBadge();
+  $('#pgmWrap').classList.toggle('fusion', fusion);
+  syncRange('#fxDist', fx.dist); syncRange('#fxZoom', fx.zoom); syncRange('#fxPar', fx.par); syncRange('#fxBlur', fx.blur);
+  $('#oDist').textContent = `크기 ${Math.round((1.15 - .85 * fx.dist) * 100)}%`;
+  $('#oZoom').textContent = fx.zoom.toFixed(2) + '×';
+  $('#oPar').textContent = Math.round(fx.par * 100) + '%';
+  $('#oBlur').textContent = Math.round(fx.blur * 100) + '%';
+  $('#btnAspect').textContent = '화면비 ' + st.aspect;
+  $$('.fx-only').forEach(e => e.classList.toggle('dim', !fusion));
+  $('#galN').textContent = S.works.length || '';
+}
+function renderStaff() {
+  const st = S.st, air = st.onAir === S.me, subj = st.mode === 'fusion' && st.subject === S.me, bench = st.bench.includes(S.me);
+  const cls = subj ? 'subj' : air ? 'onair' : '';
+  $('#tframe').className = 'tframe ' + cls;
+  const tl = $('#tally');
+  tl.className = 'tally ' + cls;
+  tl.textContent = subj ? '● ON AIR · 주인공' : air ? (st.mode === 'fusion' ? '● ON AIR · 배경' : '● ON AIR') : bench ? '대기 · 미선정' : 'STANDBY';
+  const sv = $('#selfVideo');
+  if (sv.srcObject !== S.local) sv.srcObject = S.local;
+  sv.classList.toggle('mirror', S.facing === 'user');
+  const msg = bench ? '감독이 스태프로 선정하면<br>송출이 시작돼요' : !S.callLive ? '감독 카메라에 연결 중…' : '';
+  $('#staffMsg').innerHTML = msg; $('#staffMsg').hidden = !msg;
+  $('#pip').hidden = !S.callLive;
+  const z = zoomCaps(), zi = $('#zoomIn');
+  $('#zoomCtl').hidden = !z;
+  if (z) { Object.assign(zi, { min: z.min, max: z.max, step: z.step }); syncRange('#zoomIn', z.cur); $('#zoomOut').textContent = (+z.cur).toFixed(1) + '×' }
+}
+
+// ═════════ 감독 조작 ═════════
+// 자동 배정: 주인공은 감독 자신의 전면 카메라를 우선, 배경은 후면 카메라를 우선
+function pickCam(except, facing) {
+  const f = m => m.id === S.me ? S.facing : m.facing;
+  const list = S.roster.filter(m => m.id !== except && !S.st.bench.includes(m.id) && (m.id === S.me || S.remote.has(m.id)));
+  return (facing === 'user' && list.find(m => m.id === S.me && f(m) === 'user') || list.find(m => f(m) === facing) || list[0])?.id || null;
+}
+function toggleFusion() {
+  const st = S.st;
+  if (st.mode === 'fusion') return setState({ mode: 'cut' });
+  const live = id => id && !st.bench.includes(id) && (id === S.me || S.remote.has(id));
+  const subj = live(st.subject) ? st.subject : pickCam(null, 'user');
+  const bg = live(st.onAir) && st.onAir !== subj ? st.onAir : pickCam(subj, 'environment');
+  if (!subj || !bg || subj === bg) {
+    Bot.say('융합하려면 <b>배경 카메라</b>(후면 풍경)와 <b>주인공 카메라</b>(전면 셀카)가 각각 필요해요. 코드를 공유해 스태프를 초대하세요!', 6000, true);
+    return;
+  }
+  S.base = null;
+  setState({ mode: 'fusion', subject: subj, onAir: bg });
+  ensureSeg();
+  Bot.once('fusion');
+}
+function setAir(id) {
+  const st = S.st;
+  if (st.mode === 'fusion' && st.subject === id) setState(st.onAir ? { onAir: id, subject: st.onAir } : { onAir: id, subject: null, mode: 'cut' });
+  else setState({ onAir: id });
+}
+function setSubject(id) {
+  const st = S.st;
+  if (st.mode === 'fusion' && st.subject === id) return setState({ mode: 'cut', subject: null });
+  const onAir = st.onAir && st.onAir !== id ? st.onAir : (st.subject && st.subject !== id ? st.subject : pickCam(id, 'environment'));
+  if (!onAir || onAir === id) { Bot.say('주인공 말고 <b>배경을 찍을 카메라</b>가 한 대 더 필요해요.', 4500, true); return }
+  S.base = null;
+  setState({ subject: id, onAir, mode: 'fusion' });
+  ensureSeg();
+  Bot.once('fusion');
+}
+function toggleBench(id) {
+  const st = S.st, on = st.bench.includes(id), p = { bench: on ? st.bench.filter(x => x !== id) : [...st.bench, id] };
+  if (!on) { if (st.onAir === id) p.onAir = null; if (st.subject === id) { p.subject = null; p.mode = 'cut' } }
+  setState(p);
+}
+const zoomCmd = throttle((id, v) => id === S.me ? applyZoom(v) : send({ t: 'cmd', op: 'zoom', v }, id), 80);
+
+$('#btnFusion').onclick = toggleFusion;
+$('#btnAdjust').onclick = () => {
+  const a = $('#adjust'); a.hidden = !a.hidden;
+  $('#btnAdjust').classList.toggle('on', !a.hidden);
+  fitCanvas(); Bot.place();
+};
+$('#fxDist').oninput = e => setFx({ dist: +e.target.value });
+$('#fxZoom').oninput = e => setFx({ zoom: +e.target.value });
+$('#fxPar').oninput = e => setFx({ par: +e.target.value });
+$('#fxBlur').oninput = e => setFx({ blur: +e.target.value });
+$('#btnRecenter').onclick = () => { S.base = null; toast('지금 주인공 폰의 자세를 기준(정면)으로 맞췄어요') };
+$('#btnCenter').onclick = () => setFx({ x: .5, y: 1, dist: .4 });
+$('#btnAspect').onclick = () => setState({ aspect: S.st.aspect === '9:16' ? '16:9' : '9:16' });
+$('#btnShot').onclick = shoot;
+$('#btnRec').onclick = toggleRec;
+$('#btnGallery').onclick = openGallery;
+
+// 카메라 지휘 시트
+function openCamSheet(id) { S.sheetId = id; renderCamSheet(); $('#camSheet').hidden = false }
+function closeSheets() { S.sheetId = null; $('#camSheet').hidden = true; $('#galSheet').hidden = true }
+$$('[data-close]').forEach(b => b.onclick = closeSheets);
+function renderCamSheet() {
+  const id = S.sheetId, m = member(id), st = S.st;
+  if (!m || !amDir()) return closeSheets();
+  const self = id === S.me, facing = self ? S.facing : m.facing;
+  const air = st.onAir === id, subj = st.mode === 'fusion' && st.subject === id, bench = st.bench.includes(id);
+  $('#csTitle').textContent = `CAM${m.cam} · ${m.name}${self ? ' (나)' : ''}`;
+  $('#csSub').textContent = `${facing === 'user' ? '전면' : '후면'} 카메라 · ` + (self ? '이 기기' : bench ? '대기 중' : S.remote.has(id) ? '실시간 수신 중' : '연결 중…');
+  const a = $('#csAir'); a.textContent = air ? '● 지금 ON AIR' : st.mode === 'fusion' ? '배경으로 ON AIR' : 'ON AIR 전환'; a.className = 'act' + (air ? ' red' : '');
+  const s = $('#csSubj'); s.textContent = subj ? '주인공 해제' : '주인공 지정 (융합)'; s.className = 'act' + (subj ? ' green' : '');
+  $('#csBench').textContent = bench ? '스태프로 선정하기' : '✓ 선정됨 · 대기로';
+  const z = self ? zoomCaps() : m.zoom;
+  $('#csZoomRow').hidden = !z;
+  if (z) { const zi = $('#csZoom'); Object.assign(zi, { min: z.min, max: z.max, step: z.step }); syncRange('#csZoom', z.cur); $('#csZoomOut').textContent = (+zi.value).toFixed(1) + '×' }
+  const b = $('#csBaton'); b.hidden = self; b.classList.remove('confirm'); b.textContent = '🎬 이 카메라에 감독 권한 넘기기';
+}
+$('#csAir').onclick = () => setAir(S.sheetId);
+$('#csSubj').onclick = () => setSubject(S.sheetId);
+$('#csBench').onclick = () => toggleBench(S.sheetId);
+$('#csFlip').onclick = () => S.sheetId === S.me ? switchFacing() : (send({ t: 'cmd', op: 'facing' }, S.sheetId), toast('카메라 전환을 요청했어요'));
+$('#csZoom').oninput = e => { $('#csZoomOut').textContent = (+e.target.value).toFixed(1) + '×'; zoomCmd(S.sheetId, +e.target.value) };
+$('#csBaton').onclick = () => {
+  const b = $('#csBaton');
+  if (!b.classList.contains('confirm')) {
+    b.classList.add('confirm'); b.textContent = '한 번 더 누르면 감독 권한이 넘어가요';
+    setTimeout(() => S.sheetId && renderCamSheet(), 3500);
+    return;
+  }
+  const id = S.sheetId; closeSheets(); setState({ directorId: id });
+};
+
+// 스태프 조작
+$('#btnFlip').onclick = switchFacing;
+$('#zoomIn').oninput = e => { $('#zoomOut').textContent = (+e.target.value).toFixed(1) + '×'; zoomCmd(S.me, +e.target.value) };
+$('#pip').onclick = () => $('#pip').classList.toggle('big');
+$('#btnAskDir').onclick = () => {
+  send({ t: 'askdir' }, S.st.directorId);
+  toast('감독에게 권한을 요청했어요');
+  const b = $('#btnAskDir'); b.disabled = true; setTimeout(() => b.disabled = false, 6000);
+};
+
+// 메뉴
+$('#btnMenu').onclick = () => { $('#menu').hidden = !$('#menu').hidden; renderTop() };
+document.addEventListener('pointerdown', e => { if (!$('#menu').hidden && !e.target.closest('#menu,#btnMenu')) $('#menu').hidden = true }, true);
+async function shareInvite() {
+  const url = `${location.origin}${location.pathname}${location.search}#join=${S.code}`;
+  const text = `FusionCam 촬영 그룹에 참여하세요! 코드: ${S.code}`;
+  try { if (navigator.share) return await navigator.share({ title: 'FusionCam 초대', text, url }) } catch (e) { if (e.name === 'AbortError') return }
+  try { await navigator.clipboard.writeText(`${text}\n${url}`); toast('초대 링크를 복사했어요') } catch { toast(`그룹 코드: ${S.code}`, 5000) }
+}
+$('#chipCode').onclick = shareInvite;
+$('#mShare').onclick = () => { $('#menu').hidden = true; shareInvite() };
+$('#mHelp').onclick = () => { $('#menu').hidden = true; Bot.tour() };
+$('#mBot').onclick = () => { $('#menu').hidden = true; Bot.toggleOff(); renderTop() };
+let leaveArmed = 0;
+$('#mLeave').onclick = () => {
+  if (S.isHost && Date.now() - leaveArmed > 3000) { leaveArmed = Date.now(); $('#mLeave').textContent = '한 번 더 누르면 그룹이 해체돼요'; return }
+  leave(S.isHost ? '그룹을 해체했어요. 수고하셨어요!' : '그룹에서 나왔어요');
+};
+
+// ═════════ 촬영 · 작품 ═════════
+function shoot() {
+  S.pgm.toBlob(b => b && addWork('photo', b), 'image/jpeg', .92);
+  const f = $('#flash'); f.classList.remove('go'); f.offsetWidth; f.classList.add('go');
+}
+let recArming = false;
+async function toggleRec() {
+  if (S.rec) return stopRec();
+  if (recArming) return;   // 마이크 권한 창이 떠 있는 동안의 두 번째 탭
+  if (!window.MediaRecorder) return toast('이 브라우저는 영상 녹화를 지원하지 않아요');
+  const tracks = [...S.pgmStream.getVideoTracks()];
+  recArming = true;
+  try { S.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); tracks.push(...S.mic.getAudioTracks()) }
+  catch { toast('마이크 없이 영상만 녹화해요') }
+  finally { recArming = false }
+  if (!amDir()) { S.mic?.getTracks().forEach(t => t.stop()); S.mic = null; return }
+  const mime = ['video/mp4', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
+  const rec = new MediaRecorder(new MediaStream(tracks), { ...(mime && { mimeType: mime }), videoBitsPerSecond: 8000000 });
+  const chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => addWork('video', new Blob(chunks, { type: rec.mimeType || mime || 'video/webm' }));
+  rec.start(1000);
+  S.rec = rec;
+  const t0 = Date.now();
+  const tick = () => { const s = Math.floor((Date.now() - t0) / 1000); $('#recTime').textContent = `${String(s / 60 | 0).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}` };
+  tick(); S.recTimer = setInterval(tick, 500);
+  $('#recBadge').hidden = false;
+  $('#btnRec').classList.add('on'); $('#btnRec').setAttribute('aria-label', '녹화 중지');
+  Bot.setQuiet(true);
+}
+function stopRec() {
+  if (S.rec) { if (S.rec.state !== 'inactive') S.rec.stop(); S.rec = null }
+  S.mic?.getTracks().forEach(t => t.stop()); S.mic = null;
+  clearInterval(S.recTimer);
+  $('#recBadge').hidden = true;
+  $('#btnRec').classList.remove('on'); $('#btnRec').setAttribute('aria-label', '영상 녹화 시작');
+  Bot.setQuiet(false);
+}
+function addWork(kind, blob) {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  const ext = kind === 'photo' ? 'jpg' : blob.type.includes('mp4') ? 'mp4' : 'webm';
+  S.works.unshift({ kind, blob, url: URL.createObjectURL(blob), name: `fusioncam_${stamp}.${ext}` });
+  $('#galN').textContent = S.works.length;
+  if (!$('#galSheet').hidden) renderGallery();
+  if (S.screen === 'lobby') renderLobby();
+  toast(kind === 'photo' ? '📸 사진을 담았어요' : '🎬 영상을 담았어요');
+}
+function openGallery() { renderGallery(); $('#galSheet').hidden = false }
+function saveWork(w) { const a = document.createElement('a'); a.href = w.url; a.download = w.name; a.click() }
+async function shareWork(w) {
+  const file = new File([w.blob], w.name, { type: w.blob.type });
+  try { if (navigator.canShare?.({ files: [file] })) return await navigator.share({ files: [file], title: 'FusionCam 작품' }) } catch (e) { if (e.name === 'AbortError') return }
+  saveWork(w);
+}
+function renderGallery() {
+  const g = $('#galGrid');
+  g.innerHTML = '';
+  $('#galEmpty').hidden = S.works.length > 0;
+  for (const w of S.works) {
+    const d = document.createElement('div');
+    d.className = 'work';
+    d.innerHTML = (w.kind === 'photo' ? `<img alt="융합 사진" src="${w.url}">` : `<video src="${w.url}" controls playsinline preload="metadata"></video>`)
+      + '<div class="wb"><button data-a="save">저장</button><button data-a="share">공유</button><button data-a="del">삭제</button></div>';
+    d.querySelector('[data-a=save]').onclick = () => saveWork(w);
+    d.querySelector('[data-a=share]').onclick = () => shareWork(w);
+    d.querySelector('[data-a=del]').onclick = () => { URL.revokeObjectURL(w.url); S.works = S.works.filter(x => x !== w); renderGallery(); $('#galN').textContent = S.works.length || '' };
+    g.append(d);
+  }
+}
+
+// ═════════ 설명 로봇 ‘찰칵이’ ═════════
+// 조작 영역([data-critical])을 피해 화면 가장자리에 머물고, 말풍선은 로봇·대상·조작부를 가리지 않는 쪽으로 자리를 고른다.
+const TOURS = {
+  auth: [{ t: '안녕하세요! 촬영 도우미 <b>찰칵이</b>예요.<br>처음이면 <b>회원가입</b>, 이미 계정이 있으면 로그인해 주세요.', at: '.tabs' }],
+  lobby: [
+    { t: '먼저 <b>내 카메라 방향</b>을 골라요. 풍경 담당은 <b>후면</b>, 셀카 주인공은 <b>전면</b>이 좋아요.', at: '#facingSeg' },
+    { t: '감독(주인공) 폰에서 <b>카메라 수(2~10대)</b>를 고르고 그룹을 만들어요. 만든 사람이 첫 감독이에요.', at: '#createCard' },
+    { t: '스태프는 감독에게 받은 <b>코드 6자리</b>를 넣거나 초대 링크를 열면 바로 참여해요.', at: '#joinCard' },
+  ],
+  director: [
+    { t: () => S.roster.length < 2 ? `아직 혼자예요. 위의 <b>코드 ${S.code}</b>를 누르면 초대 링크를 보낼 수 있어요.` : `스태프 ${S.roster.length - 1}명과 함께예요. 위 코드를 눌러 더 초대할 수 있어요.`, at: '#chipCode' },
+    { t: '가운데는 최종 송출 화면 <b>PGM</b>이에요. 셀카도 거울상이 아닌 <b>본상</b>(남이 찍어준 방향)으로, 보이는 그대로 저장돼요.', at: '#pgmWrap' },
+    { t: '아래 <b>카메라 타일</b>을 누르면 ON AIR 전환, 주인공 지정, 스태프 선정, 원격 줌, <b>감독 권한 넘기기</b>를 할 수 있어요.', at: '#tiles' },
+    { t: '<b>융합</b>을 누르면 배경 카메라의 풍경·화각을 이 폰으로 가져오고, 주인공 카메라에서 <b>인물만 오려</b> 합성해요.', at: '#btnFusion' },
+    { t: '<b>조정</b>에서 인물 거리, 배경 화각, <b>원근 연동</b>(주인공 폰 움직임 → 배경 시차), 심도를 맞춰요.', at: '#btnAdjust' },
+    { t: '준비되면 ◯ <b>사진</b>, ● <b>영상</b>! 녹화하는 동안 저는 구석에서 조용히 있을게요.', at: '#btnShot' },
+  ],
+  staff: [
+    { t: '지금 내 카메라 상태예요. <b>빨강</b>=송출 중(ON AIR), <b>초록</b>=주인공으로 합성 중.', at: '#tally' },
+    { t: '감독이 만드는 <b>최종 화면</b>이 여기 떠요. 누르면 크게 보여서 구도 잡기 좋아요.', at: '#pip' },
+    { t: '감독이 원격으로 줌·방향을 바꿀 수 있어요. 직접 바꾸거나 <b>감독 요청</b>을 보낼 수도 있어요.', at: '#staffDock' },
+  ],
+  fusion: [
+    { t: '융합 완료! 화면 속 <b>인물을 끌어서</b> 위치를, <b>두 손가락</b>(PC는 휠)으로 거리감을 바꿔요.', at: '#pgmWrap' },
+    { t: '주인공이 폰을 돌리면 배경이 따라 움직여요. 방향이 반대로 느껴지면 <b>조정 → 원근 연동</b>을 음수로!', at: '#btnAdjust' },
+  ],
+};
+const Bot = (() => {
+  const el = $('#bot'), bub = $('#bubble'), spot = $('#spot'), txt = $('#bText'), nav = $('#bNav'), acts = $('#bActs');
+  const stepEl = $('#bStep'), prevB = $('#bPrev'), nextB = $('#bNext'), tail = $('#bTail');
+  let pref = store.get('fc.botpos', { side: 'R', fy: .32 }), cur = { x: -80, y: -80 }, ctx = '', steps = null, idx = 0, target = null;
+  let hideT = 0, shownAt = 0, quiet = false, drag = null, off = store.get('fc.botoff', false), forced = false;
+  const visible = e => e.getClientRects().length > 0;
+  const rects = sel => $$(sel).filter(visible).map(e => e.getBoundingClientRect()).filter(r => r.width && r.height);
+  const box = (x, y, w, h) => ({ left: x, top: y, right: x + w, bottom: y + h });
+  const ov = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  const sum = (r, list) => list.reduce((s, b) => s + ov(r, b), 0);
+  const tRect = () => { if (!target || !visible(target)) return null; const r = target.getBoundingClientRect(); return box(r.left - 6, r.top - 6, r.width + 12, r.height + 12) };
+
+  function place() {
+    const hidden = off && !forced;
+    el.hidden = hidden;
+    if (hidden) { bub.hidden = spot.hidden = true; return }
+    const W = innerWidth, H = innerHeight, m = 8, s = el.offsetWidth || 50;
+    const hard = rects('[data-critical]'), soft = rects('[data-soft]'), t = tRect();
+    if (t) hard.push(t);
+    let best = null;
+    for (const side of ['L', 'R']) for (let y = m; y <= H - s - m; y += 8) {
+      const x = side === 'L' ? m : W - s - m, r = box(x, y, s, s);
+      const sc = sum(r, hard) * 40 + sum(r, soft) * .3 + Math.abs(y - pref.fy * H) * 1.5 + (side === pref.side ? 0 : 160);
+      if (!best || sc < best.sc) best = { sc, x, y };
+    }
+    if (best && !drag) { cur = best; el.style.transform = `translate(${cur.x}px,${cur.y}px)` }
+    if (!bub.hidden) placeBubble();
+  }
+  function placeBubble() {
+    const W = innerWidth, H = innerHeight, m = 8, g = 12, s = el.offsetWidth || 50;
+    const bw = bub.offsetWidth, bh = bub.offsetHeight, R = box(cur.x, cur.y, s, s), cx = cur.x + s / 2, cy = cur.y + s / 2;
+    const hard = rects('[data-critical]'), t = tRect(), C = [];
+    for (const f of [.5, .2, .8]) C.push({ side: 'L', x: R.left - g - bw, y: cy - bh * f }, { side: 'R', x: R.right + g, y: cy - bh * f });
+    for (const f of [.5, .85, .15]) C.push({ side: 'T', x: cx - bw * f, y: R.top - g - bh }, { side: 'B', x: cx - bw * f, y: R.bottom + g });
+    let best = null;
+    for (const c of C) {
+      const x = clamp(c.x, m, W - bw - m), y = clamp(c.y, m, H - bh - m), b = box(x, y, bw, bh);
+      const sc = sum(b, hard) * 2 + (t ? ov(b, t) * 6 : 0) + ov(b, R) * 60 + (Math.abs(x - c.x) + Math.abs(y - c.y)) * 30;
+      if (!best || sc < best.sc) best = { ...c, x, y, sc };
+    }
+    bub.style.transform = `translate(${best.x}px,${best.y}px)`;
+    const ts = tail.style;
+    ts.left = ts.top = ts.right = ts.bottom = '';
+    if (best.side === 'L' || best.side === 'R') { ts.top = clamp(cy - best.y - 6, 10, bh - 22) + 'px'; ts[best.side === 'L' ? 'right' : 'left'] = '-6px' }
+    else { ts.left = clamp(cx - best.x - 6, 12, bw - 24) + 'px'; ts[best.side === 'T' ? 'bottom' : 'top'] = '-6px' }
+    if (t) Object.assign(spot.style, { left: t.left + 'px', top: t.top + 'px', width: t.right - t.left + 'px', height: t.bottom - t.top + 'px' });
+    spot.hidden = !t;
+  }
+  let placeQ = 0;
+  const placeSoon = () => { placeQ ||= requestAnimationFrame(() => { placeQ = 0; place() }) };
+  function reveal() { bub.hidden = false; el.classList.add('talk'); shownAt = performance.now(); place() }
+  function hide() {
+    clearTimeout(hideT);
+    bub.hidden = spot.hidden = true; steps = null; target = null; el.classList.remove('talk');
+    if (forced) { forced = false; place() }
+  }
+  function render() {
+    const st = steps[idx];
+    txt.innerHTML = typeof st.t === 'function' ? st.t() : st.t;
+    target = st.at ? $(st.at) : null;
+    const multi = steps.length > 1;
+    stepEl.textContent = multi ? `${idx + 1} / ${steps.length}` : '';
+    prevB.hidden = !multi || idx === 0;
+    nextB.textContent = idx < steps.length - 1 ? '다음' : '알겠어요';
+    nav.hidden = false; acts.hidden = true;
+    clearTimeout(hideT);
+    reveal();
+  }
+  function tour(key = ctx) {
+    const list = (TOURS[key] || []).filter(s => !s.at || ($(s.at) && visible($(s.at))));
+    if (!list.length || (off && !forced)) return;
+    steps = list; idx = 0; render();
+  }
+  function say(html, ms = 3500, force = false) {
+    if ((quiet || off) && !force) return;
+    if (off) forced = true;
+    steps = null; target = null; txt.innerHTML = html; nav.hidden = true; acts.hidden = true;
+    reveal();
+    clearTimeout(hideT); hideT = setTimeout(hide, ms);
+  }
+  function ask(html, buttons) {
+    if (off) forced = true;
+    steps = null; target = null; txt.innerHTML = html; nav.hidden = true; acts.hidden = false; acts.innerHTML = '';
+    for (const b of buttons) {
+      const x = document.createElement('button');
+      x.textContent = b.label; if (b.primary) x.className = 'b-pri';
+      x.onclick = () => { hide(); b.fn?.() };
+      acts.append(x);
+    }
+    reveal();
+    clearTimeout(hideT); hideT = setTimeout(hide, 15000);
+  }
+  function context(key) {
+    if (key === ctx) return;
+    ctx = key; hide(); place();
+    const seen = store.get('fc.seen', {});
+    if (TOURS[key] && !seen[key]) setTimeout(() => {
+      if (ctx !== key || !bub.hidden || quiet) return;
+      seen[key] = 1; store.set('fc.seen', seen); tour(key);
+    }, 900);
+  }
+  function once(key) {
+    const seen = store.get('fc.seen', {});
+    if (seen[key]) return;
+    seen[key] = 1; store.set('fc.seen', seen);
+    setTimeout(() => !quiet && tour(key), 500);
+  }
+  function setQuiet(q) { quiet = q; el.classList.toggle('quiet', q); if (q && acts.hidden) hide() }
+  function toggleOff() { off = !off; store.set('fc.botoff', off); hide(); place(); if (!off) say('다시 왔어요! 저를 누르면 사용법을 알려 드려요.', 2600) }
+
+  nextB.onclick = () => { if (idx < steps.length - 1) { idx++; render() } else hide() };
+  prevB.onclick = () => { if (idx > 0) { idx--; render() } };
+  $('#bClose').onclick = hide;
+  // 조작을 시작하면 말풍선은 스스로 물러난다 (이벤트는 막지 않음)
+  document.addEventListener('pointerdown', e => {
+    if (bub.hidden || e.target.closest('#bubble,#bot') || !acts.hidden || performance.now() - shownAt < 300) return;
+    hide();
+  }, true);
+  // 끌어서 옮기기 → 놓으면 가까운 가장자리로 붙고, 그 자리를 기억
+  el.addEventListener('pointerdown', e => { drag = { x0: e.clientX, y0: e.clientY, bx: cur.x, by: cur.y, moved: false }; el.setPointerCapture(e.pointerId) });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+    drag.moved = true; el.classList.add('drag');
+    cur = { x: clamp(drag.bx + dx, 0, innerWidth - el.offsetWidth), y: clamp(drag.by + dy, 0, innerHeight - el.offsetHeight) };
+    el.style.transform = `translate(${cur.x}px,${cur.y}px)`;
+    if (!bub.hidden) placeBubble();
+  });
+  const up = e => {
+    if (!drag) return;
+    const d = drag; drag = null; el.classList.remove('drag');
+    if (d.moved) { pref = { side: cur.x + el.offsetWidth / 2 < innerWidth / 2 ? 'L' : 'R', fy: clamp(cur.y / innerHeight, 0, 1) }; store.set('fc.botpos', pref); place() }
+    else if (e.type === 'pointerup') bub.hidden ? tour() : hide();
+  };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bub.hidden ? tour() : hide() } });
+  addEventListener('resize', throttle(place, 120));
+  let scrollT = 0;
+  $$('.page').forEach(p => p.addEventListener('scroll', () => { clearTimeout(scrollT); scrollT = setTimeout(place, 160) }, { passive: true }));
+
+  return { place, placeSoon, tour, say, ask, hide, context, once, setQuiet, toggleOff, get off() { return off } };
+})();
+
+// ═════════ 시작 ═════════
+const joinParam = (location.hash.match(/join=([A-Za-z0-9]{6})/) || [])[1];
+if (joinParam) $('#joinCode').value = joinParam.toUpperCase();
+const sess = store.get('fc.session', null);
+S.user = sess && store.get('fc.users', {})[sess.id] ? sess : null;
+show(S.user ? 'lobby' : 'auth');
+if (joinParam && S.user) setTimeout(() => Bot.say(`초대 코드 <b>${esc(joinParam.toUpperCase())}</b>가 입력됐어요. 카메라 방향을 고르고 <b>참여하기</b>를 누르세요.`, 6000), 1200);
+</script>
+</body>
+</html>
